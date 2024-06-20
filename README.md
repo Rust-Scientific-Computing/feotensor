@@ -1,2 +1,3 @@
 # feotensor
-A tensor library for scientific computing in Rust
+
+A tensor library for scientific computing in Rust.
