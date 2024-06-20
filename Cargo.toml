@@ -9,3 +9,5 @@ homepage = "https://github.com/Rust-Scientific-Computing/feotensor"
 repository = "https://github.com/Rust-Scientific-Computing/feotensor"
 
 [dependencies]
+itertools = "0.13.0"
+num = "0.4.3"
