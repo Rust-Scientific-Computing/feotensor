@@ -36,6 +36,10 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         Tensor::fill(shape, T::zero())
     }
 
+    pub fn ones(shape: &Shape) -> Tensor<T> {
+        Tensor::fill(shape, T::one())
+    }
+
     pub fn eye(shape: &Shape) -> Tensor<T> {
         let mut t = Tensor::zeros(shape);
         for i in 0..shape.dims[0] {
@@ -431,6 +435,15 @@ mod tests {
 
         assert_eq!(tensor.shape(), &shape);
         assert_eq!(tensor.data, vec![0.0; shape.size()]);
+    }
+
+    #[test]
+    fn test_ones_tensor() {
+        let shape = shape![2, 3];
+        let tensor: Tensor<f32> = Tensor::ones(&shape);
+
+        assert_eq!(tensor.shape(), &shape);
+        assert_eq!(tensor.data, vec![1.0; shape.size()]);
     }
 
     #[test]
