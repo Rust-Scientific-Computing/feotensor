@@ -2,5 +2,10 @@
 name = "feotensor"
 version = "0.1.0"
 edition = "2021"
+description = "A Scientific Rust library for tensor operations"
+license = "MIT"
+license-file = "LICENSE"
+homepage = "https://github.com/Rust-Scientific-Computing/feotensor"
+repository = "https://github.com/Rust-Scientific-Computing/feotensor"
 
 [dependencies]
