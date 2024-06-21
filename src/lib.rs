@@ -228,6 +228,23 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         t
     }
 
+    // Tensor Product
+    // Consistent with numpy.tensordot(a, b, axis=0)
+    pub fn prod(&self, other: &Tensor<T>) -> Tensor<T> {
+        let mut new_dims = self.shape.dims.clone();
+        new_dims.extend(&other.shape.dims);
+        let new_shape = Shape::new(new_dims);
+
+        let mut new_data = Vec::with_capacity(self.size() * other.size());
+        for &a in &self.data {
+            for &b in &other.data {
+                new_data.push(a * b);
+            }
+        }
+
+        Tensor::new(&new_shape, &new_data)
+    }
+
     /// For the maths see: https://bit.ly/3KQjPa3
     fn calculate_index(&self, indices: &[usize]) -> usize {
         let mut index = 0;
@@ -762,6 +779,54 @@ mod tests {
 
         assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, vec![-10.0, -8.0, -12.0]);
+    }
+
+    #[test]
+    fn test_tensor_prod_1d_1d() {
+        let shape1 = shape![3];
+        let data1 = vec![1.0, 2.0, 3.0];
+        let tensor1 = Tensor::new(&shape1, &data1);
+
+        let shape2 = shape![2];
+        let data2 = vec![4.0, 5.0];
+        let tensor2 = Tensor::new(&shape2, &data2);
+
+        let result = tensor1.prod(&tensor2);
+
+        assert_eq!(result.shape(), &shape![3, 2]);
+        assert_eq!(result.data, vec![4.0, 5.0, 8.0, 10.0, 12.0, 15.0]);
+    }
+
+    #[test]
+    fn test_tensor_prod_2d_1d() {
+        let shape1 = shape![2, 2];
+        let data1 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor1 = Tensor::new(&shape1, &data1);
+
+        let shape2 = shape![2];
+        let data2 = vec![5.0, 6.0];
+        let tensor2 = Tensor::new(&shape2, &data2);
+
+        let result = tensor1.prod(&tensor2);
+
+        assert_eq!(result.shape(), &shape![2, 2, 2]);
+        assert_eq!(result.data, vec![5.0, 6.0, 10.0, 12.0, 15.0, 18.0, 20.0, 24.0]);
+    }
+
+    #[test]
+    fn test_tensor_prod_2d_2d() {
+        let shape1 = shape![2, 2];
+        let data1 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor1 = Tensor::new(&shape1, &data1);
+
+        let shape2 = shape![2, 2];
+        let data2 = vec![5.0, 6.0, 7.0, 8.0];
+        let tensor2 = Tensor::new(&shape2, &data2);
+
+        let result = tensor1.prod(&tensor2);
+
+        assert_eq!(result.shape(), &shape![2, 2, 2, 2]);
+        assert_eq!(result.data, vec![5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0, 16.0, 15.0, 18.0, 21.0, 24.0, 20.0, 24.0, 28.0, 32.0]);
     }
 
     #[test]
