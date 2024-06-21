@@ -1,0 +1,35 @@
+name: Publish
+
+on: 
+  workflow_call:
+    inputs:
+      new_release_published:
+        required: true
+        type: string
+      new_release_version:
+        required: true
+        type: string
+
+jobs:
+  publish-crate:
+    name: Publish Crate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Bump Version
+        if: ${{ github.event.inputs.new_release_published == 'true' }}
+        run: |
+          cargo install cargo-bump
+          cargo bump ${{ github.event.inputs.new_release_version }}
+
+      - name: Publish Crate (dry run)
+        run: cargo publish --dry-run
+
+      - name: Publish Crate
+        if: ${{ github.event.inputs.new_release_published == 'true' }}
+        run: cargo publish --dry-run  # Until we actually want to publish we'll keep this as is
