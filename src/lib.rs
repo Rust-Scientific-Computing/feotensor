@@ -18,18 +18,39 @@ pub struct Tensor<T: Num> {
     shape: Shape
 }
 
-impl<T: Num + Copy> Tensor<T> {
+impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
     pub fn new(shape: &Shape, data: &[T]) -> Tensor<T> {
         assert!(data.len() == shape.size());
         Tensor {data: data.to_vec(), shape: shape.clone()}
     }
 
-    pub fn zeros(shape: &Shape) -> Tensor<T> {
+    pub fn fill(shape: &Shape, value: T) -> Tensor<T> {
         let total_size = shape.size();
         let mut vec = Vec::with_capacity(total_size);
-        for _ in 0..total_size { vec.push(T::zero()); }
+        for _ in 0..total_size { vec.push(value); }
         Tensor::new(shape, &vec)
+    }
+
+    pub fn zeros(shape: &Shape) -> Tensor<T> {
+        Tensor::fill(shape, T::zero())
+    }
+
+    pub fn eye(shape: &Shape) -> Tensor<T> {
+        let mut t = Tensor::zeros(shape);
+        for i in 0..shape.dims[0] {
+            t.set_element(&[i, i], T::one());
+        }
+        t
+    }
+
+    // Element-wise operations
+    pub fn pow(&self, power: usize) -> Tensor<T> {
+        let mut t = self.clone();
+        for i in 0..t.size() {
+            t.data[i] = num::pow(t.data[i], power);
+        }
+        t
     }
 
     // Properties
@@ -80,10 +101,132 @@ impl<T: Num + Copy> Tensor<T> {
         t
     }
 
-    // pub fn var(&self, axes: Axes) -> Tensor<T> {}
-    // pub fn mean(&self, axes: Axes) -> Tensor<T> {}
-    // pub fn max(&self, axes: Option<Axes>) -> Tensor<T> {}
-    // pub fn min(&self, axes: Axes) -> Tensor<T> {}
+    pub fn mean(&self, axes: Axes) -> Tensor<T> {
+        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let removing_dims_t: Vec<T> = removing_dims.iter().map(|&dim| {
+            let mut result = T::zero();
+            for _ in 0..dim {
+                result = result + T::one();
+            }
+            result
+        }).collect();
+        let n = removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x);
+        self.sum(axes) / n
+    }
+
+    pub fn var(&self, axes: Axes) -> Tensor<T> {
+        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let removing_dims_t: Vec<T> = removing_dims.iter().map(|&dim| {
+            let mut result = T::zero();
+            for _ in 0..dim {
+                result = result + T::one();
+            }
+            result
+        }).collect();
+        let n = removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x);
+        
+        let all_axes = (0..self.shape.len()).collect::<Vec<_>>();
+        let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
+        let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+
+        // We resolve to a scalar value
+        if axes.is_empty() | (remaining_dims.len() == 0) {
+            let avg: T = self.data.iter().fold(T::zero(), |acc, x| acc + *x) / n;
+            let var: T = self.data.iter().map(|&x| (x - avg) * (x - avg)).fold(T::zero(), |acc, x| acc + x) / n;
+            return Tensor::new(&Shape::new(vec![1]), &[var]);
+        }
+
+        // Create new tensor with right shape
+        let new_shape = Shape::new(remaining_dims);
+        let mut t: Tensor<T> = Tensor::zeros(&new_shape);
+
+        for target in IndexIterator::new(&new_shape.dims) {
+            let sum_iter = IndexIterator::new(&removing_dims);
+            let mean = self.mean(axes.clone());
+
+            for sum_index in sum_iter {
+                let mut indices = target.clone();
+                for (i, &axis) in axes.iter().enumerate() {
+                    indices.insert(axis, sum_index[i]);
+                }
+
+                let centered = *self.get_element(&indices) - *mean.get_element(&target);
+                let value = *t.get_element(&target) + centered * centered;
+                t.set_element(&target, value);
+            }
+        }
+
+        t / n
+    }
+
+    pub fn max(&self, axes: Axes) -> Tensor<T> {
+        let all_axes = (0..self.shape.len()).collect::<Vec<_>>();
+        let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
+        let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+
+        // We resolve to a scalar value
+        if axes.is_empty() | (remaining_dims.len() == 0) {
+            let max: T = self.data.iter().fold(T::zero(), |acc, x| if acc > *x { acc } else { *x });
+            return Tensor::new(&Shape::new(vec![1]), &[max]);
+        }
+
+        // Create new tensor with right shape
+        let new_shape = Shape::new(remaining_dims);
+        let min: T = self.data.iter().fold(T::zero(), |acc, x| if acc < *x { acc } else { *x });
+        let mut t: Tensor<T> = Tensor::fill(&new_shape, min);
+
+        for target in IndexIterator::new(&new_shape.dims) {
+            let max_iter = IndexIterator::new(&removing_dims);
+            for max_index in max_iter {
+                let mut indices = target.clone();
+                for (i, &axis) in axes.iter().enumerate() {
+                    indices.insert(axis, max_index[i]);
+                }
+
+                if self.get_element(&indices) > t.get_element(&target) {
+                    t.set_element(&target, *self.get_element(&indices));
+                }
+            }
+        }
+
+        t
+    }
+
+    pub fn min(&self, axes: Axes) -> Tensor<T> {
+        let all_axes = (0..self.shape.len()).collect::<Vec<_>>();
+        let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
+        let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+
+        // We resolve to a scalar value
+        if axes.is_empty() | (remaining_dims.len() == 0) {
+            let min: T = self.data.iter().fold(T::zero(), |acc, x| if acc < *x { acc } else { *x });
+            return Tensor::new(&Shape::new(vec![1]), &[min]);
+        }
+
+        // Create new tensor with right shape
+        let new_shape = Shape::new(remaining_dims);
+        let max: T = self.data.iter().fold(T::zero(), |acc, x| if acc > *x { acc } else { *x });
+        let mut t: Tensor<T> = Tensor::fill(&new_shape, max);
+
+        for target in IndexIterator::new(&new_shape.dims) {
+            let min_iter = IndexIterator::new(&removing_dims);
+            for min_index in min_iter {
+                let mut indices = target.clone();
+                for (i, &axis) in axes.iter().enumerate() {
+                    indices.insert(axis, min_index[i]);
+                }
+
+                if self.get_element(&indices) < t.get_element(&target) {
+                    t.set_element(&target, *self.get_element(&indices));
+                }
+            }
+        }
+
+        t
+    }
 
     /// For the maths see: https://bit.ly/3KQjPa3
     fn calculate_index(&self, indices: &[usize]) -> usize {
@@ -110,7 +253,7 @@ impl<T: Num + Copy> Tensor<T> {
 }
 
 // Element-wise Multiplication
-impl<T: Num + Copy> Mul<T> for Tensor<T> {
+impl<T: Num + PartialOrd + Copy> Mul<T> for Tensor<T> {
     type Output = Tensor<T>;
 
     fn mul(self, rhs: T) -> Tensor<T> {
@@ -123,7 +266,7 @@ impl<T: Num + Copy> Mul<T> for Tensor<T> {
 }
 
 // Element-wise Addition
-impl<T: Num + Copy> Add<T> for Tensor<T> {
+impl<T: Num + PartialOrd + Copy> Add<T> for Tensor<T> {
     type Output = Tensor<T>;
 
     fn add(self, rhs: T) -> Tensor<T> {
@@ -136,7 +279,7 @@ impl<T: Num + Copy> Add<T> for Tensor<T> {
 }
 
 // Element-wise Subtraction
-impl<T: Num + Copy> Sub<T> for Tensor<T>
+impl<T: Num + PartialOrd + Copy> Sub<T> for Tensor<T>
 {
     type Output = Tensor<T>;
 
@@ -150,7 +293,7 @@ impl<T: Num + Copy> Sub<T> for Tensor<T>
 }
 
 // Element-wise Division
-impl<T: Num + Copy> Div<T> for Tensor<T>
+impl<T: Num + PartialOrd + Copy> Div<T> for Tensor<T>
 {
     type Output = Tensor<T>;
 
@@ -189,6 +332,28 @@ mod tests {
     }
 
     #[test]
+    fn test_fill_tensor() {
+        let shape = shape![2, 3];
+        let tensor: Tensor<f32> = Tensor::fill(&shape, 7.0);
+
+        assert_eq!(tensor.shape(), &shape);
+        assert_eq!(tensor.data, vec![7.0; shape.size()]);
+    }
+
+    #[test]
+    fn test_eye_tensor() {
+        let shape = shape![3, 3];
+        let tensor: Tensor<f32> = Tensor::eye(&shape);
+
+        assert_eq!(tensor.shape(), &shape);
+        assert_eq!(tensor.data, vec![
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0
+        ]);
+    }
+
+    #[test]
     fn test_tensor_shape() {
         let shape = shape![2, 3];
         let tensor: Tensor<f32> = Tensor::zeros(&shape);
@@ -202,6 +367,23 @@ mod tests {
         let tensor: Tensor<f32> = Tensor::zeros(&shape);
 
         assert_eq!(tensor.size(), 6);
+    }
+
+    #[test]
+    fn test_tensor_pow() {
+        let shape = shape![2, 2];
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.pow(2);
+
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, vec![1.0, 4.0, 9.0, 16.0]);
+
+        let result = tensor.pow(3);
+
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, vec![1.0, 8.0, 27.0, 64.0]);
     }
 
     #[test]
@@ -327,6 +509,174 @@ mod tests {
 
         assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, vec![22.0, 26.0, 30.0]);
+    }
+
+    #[test]
+    fn test_tensor_mean_one_axis_2d() {
+        let shape = shape![2, 3];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.mean(vec![0]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_tensor_mean_one_axis_3d() {
+        let shape = shape![2, 2, 3];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.mean(vec![0]);
+
+        assert_eq!(result.shape(), &shape![2, 3]);
+        assert_eq!(result.data, vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    }
+
+    #[test]
+    fn test_tensor_mean_multiple_axes_2d() {
+        let shape = shape![2, 3];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.mean(vec![0, 1]);
+
+        assert_eq!(result.shape(), &shape![1]);
+        assert_eq!(result.data, vec![3.5]);
+    }
+
+    #[test]
+    fn test_tensor_mean_multiple_axes_3d() {
+        let shape = shape![2, 2, 3];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.mean(vec![0, 1]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![5.5, 6.5, 7.5]);
+    }
+
+    #[test]
+    fn test_tensor_var_one_axis_2d() {
+        let shape = shape![2, 3];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.var(vec![0]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![2.25, 2.25, 2.25]);
+    }
+
+    #[test]
+    fn test_tensor_var_one_axis_3d() {
+        let shape = shape![2, 2, 3];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.var(vec![0]);
+
+        assert_eq!(result.shape(), &shape![2, 3]);
+        assert_eq!(result.data, vec![9.0, 9.0, 9.0, 9.0, 9.0, 9.0]);
+    }
+
+    #[test]
+    fn test_tensor_var_multiple_axes_2d() {
+        let shape = shape![2, 3];
+        let data = vec![1.0, 1.0, 1.0, 7.0, 7.0, 7.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.var(vec![0, 1]);
+
+        assert_eq!(result.shape(), &shape![1]);
+        assert_eq!(result.data, vec![9.0]);
+    }
+
+    #[test]
+    fn test_tensor_var_multiple_axes_3d() {
+        let shape = shape![2, 2, 3];
+        let data = vec![1.0, 3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.var(vec![0, 1]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![45.0, 45.0, 45.0]);
+    }
+
+    #[test]
+    fn test_tensor_max_no_axis_1d() {
+        let shape = shape![5];
+        let data = vec![1.0, -2.0, 3.0, -4.0, 5.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.max(vec![]);
+
+        assert_eq!(result.shape(), &shape![1]);
+        assert_eq!(result.data, vec![5.0]);
+    }
+
+    #[test]
+    fn test_tensor_max_one_axis_2d() {
+        let shape = shape![2, 3];
+        let data = vec![1.0, -2.0, 3.0, -4.0, 5.0, -6.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.max(vec![0]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![1.0, 5.0, 3.0]);
+    }
+
+    #[test]
+    fn test_tensor_max_multiple_axes_3d() {
+        let shape = shape![2, 2, 3];
+        let data = vec![1.0, -2.0, 3.0, -4.0, 5.0, -6.0, 7.0, -8.0, 9.0, -10.0, 11.0, -12.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.max(vec![0, 1]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![7.0, 11.0, 9.0]);
+    }
+
+    #[test]
+    fn test_tensor_min_no_axis_1d() {
+        let shape = shape![5];
+        let data = vec![1.0, -2.0, 3.0, -4.0, 5.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.min(vec![]);
+
+        assert_eq!(result.shape(), &shape![1]);
+        assert_eq!(result.data, vec![-4.0]);
+    }
+
+    #[test]
+    fn test_tensor_min_one_axis_2d() {
+        let shape = shape![2, 3];
+        let data = vec![1.0, -2.0, 3.0, -4.0, 5.0, -6.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.min(vec![0]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![-4.0, -2.0, -6.0]);
+    }
+
+    #[test]
+    fn test_tensor_min_multiple_axes_3d() {
+        let shape = shape![2, 2, 3];
+        let data = vec![1.0, -2.0, 3.0, -4.0, 5.0, -6.0, 7.0, -8.0, 9.0, -10.0, 11.0, -12.0];
+        let tensor = Tensor::new(&shape, &data);
+
+        let result = tensor.min(vec![0, 1]);
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![-10.0, -8.0, -12.0]);
     }
 
     #[test]
