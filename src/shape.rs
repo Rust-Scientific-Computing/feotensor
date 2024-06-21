@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::Index;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Shape {
@@ -16,6 +17,14 @@ impl Shape {
 
     pub fn len(&self) -> usize {
         self.dims.len()
+    }
+}
+
+impl Index<usize> for Shape {
+    type Output = usize;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.dims[index]
     }
 }
 

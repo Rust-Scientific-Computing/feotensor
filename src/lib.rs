@@ -265,6 +265,63 @@ impl<T: Num + PartialOrd + Copy> Mul<T> for Tensor<T> {
     }
 }
 
+// Vector/Matrix Multiplication
+impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
+    type Output = Tensor<T>;
+
+    fn mul(self, rhs: Tensor<T>) -> Tensor<T> {
+    if self.shape.len() == 1 && rhs.shape.len() == 1 {
+        // Vector-Vector multiplication (dot product)
+        assert!(self.shape[0] == rhs.shape[0], "Vectors must be of the same length for dot product.");
+        let mut result = T::zero();
+        for i in 0..self.shape[0] {
+            result = result + self.data[i] * rhs.data[i];
+        }
+        Tensor::new(&shape![1], &vec![result])
+    } else if self.shape.len() == 1 && rhs.shape.len() == 2 {
+        // Vector-Matrix multiplication
+        assert!(self.shape[0] == rhs.shape[0], "The length of the vector must be equal to the number of rows in the matrix.");
+        let mut result = Tensor::zeros(&shape![rhs.shape[1]]);
+        for j in 0..rhs.shape[1] {
+            let mut sum = T::zero();
+            for i in 0..self.shape[0] {
+                sum = sum + self.data[i] * rhs.data[i * rhs.shape[1] + j];
+            }
+            result.data[j] = sum;
+        }
+        result
+    } else if self.shape.len() == 2 && rhs.shape.len() == 1 {
+        // Matrix-Vector multiplication
+        assert!(self.shape[1] == rhs.shape[0], "The number of columns in the matrix must be equal to the length of the vector.");
+        let mut result = Tensor::zeros(&shape![self.shape[0]]);
+        for i in 0..self.shape[0] {
+            let mut sum = T::zero();
+            for j in 0..self.shape[1] {
+                sum = sum + self.data[i * self.shape[1] + j] * rhs.data[j];
+            }
+            result.data[i] = sum;
+        }
+        result
+    } else if self.shape.len() == 2 && rhs.shape.len() == 2 {
+        // Matrix-Matrix multiplication
+        assert!(self.shape[1] == rhs.shape[0], "The number of columns in the first matrix must be equal to the number of rows in the second matrix.");
+        let mut result = Tensor::zeros(&shape![self.shape[0], rhs.shape[1]]);
+        for i in 0..self.shape[0] {
+            for j in 0..rhs.shape[1] {
+                let mut sum = T::zero();
+                for k in 0..self.shape[1] {
+                    sum = sum + self.data[i * self.shape[1] + k] * rhs.data[k * rhs.shape[1] + j];
+                }
+                result.data[i * rhs.shape[1] + j] = sum;
+            }
+        }
+        result
+    } else {
+        panic!("Unsupported shapes for multiplication.");
+    }
+    }
+}
+
 // Element-wise Addition
 impl<T: Num + PartialOrd + Copy> Add<T> for Tensor<T> {
     type Output = Tensor<T>;
@@ -771,6 +828,84 @@ mod tests {
 
         assert_eq!(result.shape(), &shape);
         assert_eq!(result.data, vec![2.0, 4.0, 6.0, 8.0]);
+    }
+
+    #[test]
+    fn test_vec_vec_mul_single() {
+        let shape = shape![1];
+        let data1 = vec![2.0];
+        let data2 = vec![5.0];
+
+        let tensor1 = Tensor::new(&shape, &data1);
+        let tensor2 = Tensor::new(&shape, &data2);
+
+        let result = tensor1 * tensor2;
+
+        assert_eq!(result.shape(), &shape![1]);
+        assert_eq!(result.data, vec![10.0]);
+    }
+
+    #[test]
+    fn test_vec_vec_mul() {
+        let shape = shape![4];
+        let data1 = vec![1.0, 2.0, 3.0, 4.0];
+        let data2 = vec![2.0, 3.0, 4.0, 5.0];
+
+        let tensor1 = Tensor::new(&shape, &data1);
+        let tensor2 = Tensor::new(&shape, &data2);
+
+        let result = tensor1 * tensor2;
+
+        assert_eq!(result.shape(), &shape![1]);
+        assert_eq!(result.data, vec![40.0]);
+    }
+
+    #[test]
+    fn test_vec_matrix_mul() {
+        let shape_vec = shape![2];
+        let shape_matrix = shape![2, 3];
+        let data_vec = vec![1.0, 2.0];
+        let data_matrix = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+
+        let tensor_vec = Tensor::new(&shape_vec, &data_vec);
+        let tensor_matrix = Tensor::new(&shape_matrix, &data_matrix);
+
+        let result = tensor_vec * tensor_matrix;
+
+        assert_eq!(result.shape(), &shape![3]);
+        assert_eq!(result.data, vec![9.0, 12.0, 15.0]);
+    }
+
+    #[test]
+    fn test_matrix_vec_mul() {
+        let shape_matrix = shape![2, 3];
+        let shape_vec = shape![3];
+        let data_matrix = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let data_vec = vec![1.0, 2.0, 3.0];
+
+        let tensor_matrix = Tensor::new(&shape_matrix, &data_matrix);
+        let tensor_vec = Tensor::new(&shape_vec, &data_vec);
+
+        let result = tensor_matrix * tensor_vec;
+
+        assert_eq!(result.shape(), &shape![2]);
+        assert_eq!(result.data, vec![14.0, 32.0]);
+    }
+
+    #[test]
+    fn test_matrix_matrix_mul() {
+        let shape1 = shape![2, 3];
+        let shape2 = shape![3, 2];
+        let data1 = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let data2 = vec![7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
+
+        let tensor1 = Tensor::new(&shape1, &data1);
+        let tensor2 = Tensor::new(&shape2, &data2);
+
+        let result = tensor1 * tensor2;
+
+        assert_eq!(result.shape(), &shape![2, 2]);
+        assert_eq!(result.data, vec![58.0, 64.0, 139.0, 154.0]);
     }
 
     #[test]
