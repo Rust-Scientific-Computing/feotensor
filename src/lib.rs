@@ -278,6 +278,20 @@ impl<T: Num + PartialOrd + Copy> Add<T> for Tensor<T> {
     }
 }
 
+// Tensor Addition
+impl<T: Num + PartialOrd + Copy> Add<Tensor<T>> for Tensor<T> {
+    type Output = Tensor<T>;
+
+    fn add(self, rhs: Tensor<T>) -> Tensor<T> {
+        assert!(self.shape == rhs.shape);
+        let mut result = Tensor::zeros(&self.shape);
+        for i in 0..self.size() {
+            result.data[i] = self.data[i].clone() + rhs.data[i].clone();
+        }
+        result
+    }
+}
+
 // Element-wise Subtraction
 impl<T: Num + PartialOrd + Copy> Sub<T> for Tensor<T>
 {
@@ -287,6 +301,20 @@ impl<T: Num + PartialOrd + Copy> Sub<T> for Tensor<T>
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
             result.data[i] = self.data[i].clone() - rhs;
+        }
+        result
+    }
+}
+
+// Tensor Subtraction
+impl<T: Num + PartialOrd + Copy> Sub<Tensor<T>> for Tensor<T> {
+    type Output = Tensor<T>;
+
+    fn sub(self, rhs: Tensor<T>) -> Tensor<T> {
+        assert!(self.shape == rhs.shape);
+        let mut result = Tensor::zeros(&self.shape);
+        for i in 0..self.size() {
+            result.data[i] = self.data[i].clone() - rhs.data[i].clone();
         }
         result
     }
@@ -692,6 +720,20 @@ mod tests {
     }
 
     #[test]
+    fn test_add_tensors() {
+        let shape = shape![2, 2];
+        let data1 = vec![1.0, 2.0, 3.0, 4.0];
+        let data2 = vec![5.0, 6.0, 7.0, 8.0];
+        let tensor1 = Tensor::new(&shape, &data1);
+        let tensor2 = Tensor::new(&shape, &data2);
+
+        let result = tensor1 + tensor2;
+
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, vec![6.0, 8.0, 10.0, 12.0]);
+    }
+
+    #[test]
     fn test_sub_tensor() {
         let shape = shape![4];
         let data1 = vec![5.0, 6.0, 7.0, 8.0];
@@ -702,6 +744,20 @@ mod tests {
 
         assert_eq!(result.shape(), &shape);
         assert_eq!(result.data, vec![2.0, 3.0, 4.0, 5.0]);
+    }
+
+    #[test]
+    fn test_sub_tensors() {
+        let shape = shape![2, 2];
+        let data1 = vec![5.0, 6.0, 7.0, 8.0];
+        let data2 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor1 = Tensor::new(&shape, &data1);
+        let tensor2 = Tensor::new(&shape, &data2);
+
+        let result = tensor1 - tensor2;
+
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, vec![4.0, 4.0, 4.0, 4.0]);
     }
 
     #[test]
