@@ -1,6 +1,8 @@
 pub mod shape;
 pub mod iter;
 pub mod error;
+pub mod coordinate;
+pub mod storage;
 
 use num::Num;
 use std::ops::Add;
@@ -11,14 +13,17 @@ use std::ops::Div;
 use crate::shape::Shape;
 use crate::iter::IndexIterator;
 use crate::error::ShapeError;
+use crate::coordinate::Coordinate;
+use crate::storage::DynamicStorage;
 
 pub type Axes = Vec<usize>;
 
-#[derive(Debug, Clone)]
-pub struct Tensor<T: Num> {
-    data: Vec<T>,
+#[derive(Debug)]
+pub struct DynamicTensor<T: Num> {
+    data: DynamicStorage<T>,
     shape: Shape
 }
+type Tensor<T> = DynamicTensor<T>;  // Alias for convenience
 
 impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
@@ -26,7 +31,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         if data.len() != shape.size() {
             return Err(ShapeError::new("Data length does not match shape size"));
         }
-        Ok(Tensor {data: data.to_vec(), shape: shape.clone()})
+        Ok(Tensor {data: DynamicStorage::new(data.to_vec()), shape: shape.clone()})
     }
 
     pub fn fill(shape: &Shape, value: T) -> Tensor<T> {
@@ -44,27 +49,16 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         Tensor::fill(shape, T::one())
     }
 
-    // Element-wise operations
-    pub fn pow(&self, power: usize) -> Tensor<T> {
-        let mut t = self.clone();
-        for i in 0..t.size() {
-            t.data[i] = num::pow(t.data[i], power);
-        }
-        t
-    }
-
     // Properties
     pub fn shape(&self) -> &Shape { &self.shape }
     pub fn size(&self) -> usize { self.shape.size() }
 
-    pub fn get_element(&self, indices: &[usize]) -> Result<&T, ShapeError> {
-        self.assert_indices(indices)?;
-        Ok(&self.data[self.calculate_index(indices)])
+    pub fn get_element(&self, coord: &Coordinate) -> Result<&T, ShapeError> {
+        Ok(&self.data[self.data.flatten(coord, &self.shape)?])
     }
 
-    pub fn set_element(&mut self, indices: &[usize], value: T) -> Result<(), ShapeError> {
-        self.assert_indices(indices)?;
-        let index = self.calculate_index(indices);
+    pub fn set_element(&mut self, coord: &Coordinate, value: T) -> Result<(), ShapeError> {
+        let index = self.data.flatten(coord, &self.shape)?;
         self.data[index] = value;
         Ok(())
     }
@@ -79,19 +73,20 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         // We resolve to a scalar value
         if axes.is_empty() | (remaining_dims.len() == 0) {
             let sum: T = self.data.iter().fold(T::zero(), |acc, x| acc + *x);
-            return Tensor::new(&Shape::new(vec![1]).unwrap(), &[sum]).unwrap();
+            return Tensor::new(&shape![1].unwrap(), &[sum]).unwrap();
         }
 
         // Create new tensor with right shape
         let new_shape = Shape::new(remaining_dims).unwrap();
+        let remove_shape = Shape::new(removing_dims).unwrap();
         let mut t: Tensor<T> = Tensor::zeros(&new_shape);
 
-        for target in IndexIterator::new(&new_shape.dims) {
-            let sum_iter = IndexIterator::new(&removing_dims);
+        for target in IndexIterator::new(&new_shape) {
+            let sum_iter = IndexIterator::new(&remove_shape);
             for sum_index in sum_iter {
                 let mut indices = target.clone();
                 for (i, &axis) in axes.iter().enumerate() {
-                    indices.insert(axis, sum_index[i]);
+                    indices = indices.insert(axis, sum_index[i]);
                 }
 
                 let value = *t.get_element(&target).unwrap() + *self.get_element(&indices).unwrap();
@@ -140,16 +135,17 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
         // Create new tensor with right shape
         let new_shape = Shape::new(remaining_dims).unwrap();
+        let remove_shape = Shape::new(removing_dims).unwrap();
         let mut t: Tensor<T> = Tensor::zeros(&new_shape);
 
-        for target in IndexIterator::new(&new_shape.dims) {
-            let sum_iter = IndexIterator::new(&removing_dims);
+        for target in IndexIterator::new(&new_shape) {
+            let sum_iter = IndexIterator::new(&remove_shape);
             let mean = self.mean(axes.clone());
 
             for sum_index in sum_iter {
                 let mut indices = target.clone();
                 for (i, &axis) in axes.iter().enumerate() {
-                    indices.insert(axis, sum_index[i]);
+                    indices = indices.insert(axis, sum_index[i]);
                 }
 
                 let centered = *self.get_element(&indices).unwrap() - *mean.get_element(&target).unwrap();
@@ -175,15 +171,16 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
         // Create new tensor with right shape
         let new_shape = Shape::new(remaining_dims).unwrap();
+        let remove_shape = Shape::new(removing_dims).unwrap();
         let min: T = self.data.iter().fold(T::zero(), |acc, x| if acc < *x { acc } else { *x });
         let mut t: Tensor<T> = Tensor::fill(&new_shape, min);
 
-        for target in IndexIterator::new(&new_shape.dims) {
-            let max_iter = IndexIterator::new(&removing_dims);
+        for target in IndexIterator::new(&new_shape) {
+            let max_iter = IndexIterator::new(&remove_shape);
             for max_index in max_iter {
                 let mut indices = target.clone();
                 for (i, &axis) in axes.iter().enumerate() {
-                    indices.insert(axis, max_index[i]);
+                    indices = indices.insert(axis, max_index[i]);
                 }
 
                 if self.get_element(&indices).unwrap() > t.get_element(&target).unwrap() {
@@ -209,15 +206,16 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
         // Create new tensor with right shape
         let new_shape = Shape::new(remaining_dims).unwrap();
+        let remove_shape = Shape::new(removing_dims).unwrap();
         let max: T = self.data.iter().fold(T::zero(), |acc, x| if acc > *x { acc } else { *x });
         let mut t: Tensor<T> = Tensor::fill(&new_shape, max);
 
-        for target in IndexIterator::new(&new_shape.dims) {
-            let min_iter = IndexIterator::new(&removing_dims);
+        for target in IndexIterator::new(&new_shape) {
+            let min_iter = IndexIterator::new(&remove_shape);
             for min_index in min_iter {
                 let mut indices = target.clone();
                 for (i, &axis) in axes.iter().enumerate() {
-                    indices.insert(axis, min_index[i]);
+                    indices = indices.insert(axis, min_index[i]);
                 }
 
                 if self.get_element(&indices).unwrap() < t.get_element(&target).unwrap() {
@@ -244,29 +242,6 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         }
 
         Tensor::new(&new_shape, &new_data).unwrap()
-    }
-
-    /// For the maths see: https://bit.ly/3KQjPa3
-    fn calculate_index(&self, indices: &[usize]) -> usize {
-        let mut index = 0;
-        for k in 0..self.shape.order() {
-            let stride = self.shape.dims[k+1..].iter().product::<usize>();
-            index += indices[k] * stride;
-        }
-        index
-    }
-
-    fn assert_indices(&self, indices: &[usize]) -> Result<(), ShapeError> {
-        if indices.len() != self.shape.order() {
-            let msg = format!("incorrect order ({} vs {}).", indices.len(), self.shape.order());
-            return Err(ShapeError::new(msg.as_str()));
-        }
-        for (i, &index) in indices.iter().enumerate() {
-            if index >= self.shape.dims[i] {
-                return Err(ShapeError::new(format!("out of bounds for dimension {}", i).as_str()));
-            }
-        }
-        Ok(())
     }
 }
 
@@ -422,7 +397,7 @@ mod tests {
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         assert_eq!(tensor.shape(), &shape);
-        assert_eq!(tensor.data, data);
+        assert_eq!(tensor.data, DynamicStorage::new(data));
     }
 
     #[test]
@@ -441,7 +416,7 @@ mod tests {
         let tensor: Tensor<f32> = Tensor::zeros(&shape);
 
         assert_eq!(tensor.shape(), &shape);
-        assert_eq!(tensor.data, vec![0.0; shape.size()]);
+        assert_eq!(tensor.data, DynamicStorage::new(vec![0.0; shape.size()]));
     }
 
     #[test]
@@ -450,7 +425,7 @@ mod tests {
         let tensor: Tensor<f32> = Tensor::ones(&shape);
 
         assert_eq!(tensor.shape(), &shape);
-        assert_eq!(tensor.data, vec![1.0; shape.size()]);
+        assert_eq!(tensor.data, DynamicStorage::new(vec![1.0; shape.size()]));
     }
 
     #[test]
@@ -459,7 +434,7 @@ mod tests {
         let tensor: Tensor<f32> = Tensor::fill(&shape, 7.0);
 
         assert_eq!(tensor.shape(), &shape);
-        assert_eq!(tensor.data, vec![7.0; shape.size()]);
+        assert_eq!(tensor.data, DynamicStorage::new(vec![7.0; shape.size()]));
     }
 
     #[test]
@@ -478,22 +453,6 @@ mod tests {
         assert_eq!(tensor.size(), 6);
     }
 
-    #[test]
-    fn test_tensor_pow() {
-        let shape = shape![2, 2].unwrap();
-        let data = vec![1.0, 2.0, 3.0, 4.0];
-        let tensor = Tensor::new(&shape, &data).unwrap();
-
-        let result = tensor.pow(2);
-
-        assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![1.0, 4.0, 9.0, 16.0]);
-
-        let result = tensor.pow(3);
-
-        assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![1.0, 8.0, 27.0, 64.0]);
-    }
 
     #[test]
     fn test_tensor_get() {
@@ -501,10 +460,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert_eq!(*tensor.get_element(&[0, 0]).unwrap(), 1.0);
-        assert_eq!(*tensor.get_element(&[0, 1]).unwrap(), 2.0);
-        assert_eq!(*tensor.get_element(&[1, 0]).unwrap(), 3.0);
-        assert_eq!(*tensor.get_element(&[1, 1]).unwrap(), 4.0);
+        assert_eq!(*tensor.get_element(&coord![0, 0]).unwrap(), 1.0);
+        assert_eq!(*tensor.get_element(&coord![0, 1]).unwrap(), 2.0);
+        assert_eq!(*tensor.get_element(&coord![1, 0]).unwrap(), 3.0);
+        assert_eq!(*tensor.get_element(&coord![1, 1]).unwrap(), 4.0);
     }
 
     #[test]
@@ -513,15 +472,15 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut tensor = Tensor::new(&shape, &data).unwrap();
 
-        tensor.set_element(&[0, 0], 5.0).unwrap();
-        tensor.set_element(&[0, 1], 6.0).unwrap();
-        tensor.set_element(&[1, 0], 7.0).unwrap();
-        tensor.set_element(&[1, 1], 8.0).unwrap();
+        tensor.set_element(&coord![0, 0], 5.0).unwrap();
+        tensor.set_element(&coord![0, 1], 6.0).unwrap();
+        tensor.set_element(&coord![1, 0], 7.0).unwrap();
+        tensor.set_element(&coord![1, 1], 8.0).unwrap();
 
-        assert_eq!(*tensor.get_element(&[0, 0]).unwrap(), 5.0);
-        assert_eq!(*tensor.get_element(&[0, 1]).unwrap(), 6.0);
-        assert_eq!(*tensor.get_element(&[1, 0]).unwrap(), 7.0);
-        assert_eq!(*tensor.get_element(&[1, 1]).unwrap(), 8.0);
+        assert_eq!(*tensor.get_element(&coord![0, 0]).unwrap(), 5.0);
+        assert_eq!(*tensor.get_element(&coord![0, 1]).unwrap(), 6.0);
+        assert_eq!(*tensor.get_element(&coord![1, 0]).unwrap(), 7.0);
+        assert_eq!(*tensor.get_element(&coord![1, 1]).unwrap(), 8.0);
     }
 
     #[test]
@@ -530,9 +489,9 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert!(tensor.get_element(&[2, 0]).is_err());
-        assert!(tensor.get_element(&[0, 2]).is_err());
-        assert!(tensor.get_element(&[2, 2]).is_err());
+        assert!(tensor.get_element(&coord![2, 0]).is_err());
+        assert!(tensor.get_element(&coord![0, 2]).is_err());
+        assert!(tensor.get_element(&coord![2, 2]).is_err());
     }
 
     #[test]
@@ -541,9 +500,9 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert!(tensor.set_element(&[2, 0], 5.0).is_err());
-        assert!(tensor.set_element(&[0, 2], 6.0).is_err());
-        assert!(tensor.set_element(&[2, 2], 7.0).is_err());
+        assert!(tensor.set_element(&coord![2, 0], 5.0).is_err());
+        assert!(tensor.set_element(&coord![0, 2], 6.0).is_err());
+        assert!(tensor.set_element(&coord![2, 2], 7.0).is_err());
     }
 
     #[test]
@@ -555,7 +514,7 @@ mod tests {
         let result = tensor.sum(vec![]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![15.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![15.0]));
     }
 
     #[test]
@@ -567,7 +526,7 @@ mod tests {
         let result = tensor.sum(vec![]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![21.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![21.0]));
     }
 
     #[test]
@@ -579,7 +538,7 @@ mod tests {
         let result = tensor.sum(vec![]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![78.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![78.0]));
     }
 
     #[test]
@@ -591,7 +550,7 @@ mod tests {
         let result = tensor.sum(vec![0]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![15.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![15.0]));
     }
 
     #[test]
@@ -603,7 +562,7 @@ mod tests {
         let result = tensor.sum(vec![0]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![5.0, 7.0, 9.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![5.0, 7.0, 9.0]));
     }
 
     #[test]
@@ -615,7 +574,7 @@ mod tests {
         let result = tensor.sum(vec![0]);
 
         assert_eq!(result.shape(), &shape![2, 3].unwrap());
-        assert_eq!(result.data, vec![8.0, 10.0, 12.0, 14.0, 16.0, 18.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![8.0, 10.0, 12.0, 14.0, 16.0, 18.0]));
     }
 
     #[test]
@@ -627,7 +586,7 @@ mod tests {
         let result = tensor.sum(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![21.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![21.0]));
     }
 
     #[test]
@@ -639,7 +598,7 @@ mod tests {
         let result = tensor.sum(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![22.0, 26.0, 30.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![22.0, 26.0, 30.0]));
     }
 
     #[test]
@@ -651,7 +610,7 @@ mod tests {
         let result = tensor.mean(vec![0]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![2.5, 3.5, 4.5]);
+        assert_eq!(result.data, DynamicStorage::new(vec![2.5, 3.5, 4.5]));
     }
 
     #[test]
@@ -663,7 +622,7 @@ mod tests {
         let result = tensor.mean(vec![0]);
 
         assert_eq!(result.shape(), &shape![2, 3].unwrap());
-        assert_eq!(result.data, vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0]));
     }
 
     #[test]
@@ -675,7 +634,7 @@ mod tests {
         let result = tensor.mean(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![3.5]);
+        assert_eq!(result.data, DynamicStorage::new(vec![3.5]));
     }
 
     #[test]
@@ -687,7 +646,7 @@ mod tests {
         let result = tensor.mean(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![5.5, 6.5, 7.5]);
+        assert_eq!(result.data, DynamicStorage::new(vec![5.5, 6.5, 7.5]));
     }
 
     #[test]
@@ -699,7 +658,7 @@ mod tests {
         let result = tensor.var(vec![0]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![2.25, 2.25, 2.25]);
+        assert_eq!(result.data, DynamicStorage::new(vec![2.25, 2.25, 2.25]));
     }
 
     #[test]
@@ -711,7 +670,7 @@ mod tests {
         let result = tensor.var(vec![0]);
 
         assert_eq!(result.shape(), &shape![2, 3].unwrap());
-        assert_eq!(result.data, vec![9.0, 9.0, 9.0, 9.0, 9.0, 9.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![9.0, 9.0, 9.0, 9.0, 9.0, 9.0]));
     }
 
     #[test]
@@ -723,7 +682,7 @@ mod tests {
         let result = tensor.var(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![9.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![9.0]));
     }
 
     #[test]
@@ -735,7 +694,7 @@ mod tests {
         let result = tensor.var(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![45.0, 45.0, 45.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![45.0, 45.0, 45.0]));
     }
 
     #[test]
@@ -747,7 +706,7 @@ mod tests {
         let result = tensor.max(vec![]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![5.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![5.0]));
     }
 
     #[test]
@@ -759,7 +718,7 @@ mod tests {
         let result = tensor.max(vec![0]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![1.0, 5.0, 3.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![1.0, 5.0, 3.0]));
     }
 
     #[test]
@@ -771,7 +730,7 @@ mod tests {
         let result = tensor.max(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![7.0, 11.0, 9.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![7.0, 11.0, 9.0]));
     }
 
     #[test]
@@ -783,7 +742,7 @@ mod tests {
         let result = tensor.min(vec![]);
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![-4.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![-4.0]));
     }
 
     #[test]
@@ -795,7 +754,7 @@ mod tests {
         let result = tensor.min(vec![0]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![-4.0, -2.0, -6.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![-4.0, -2.0, -6.0]));
     }
 
     #[test]
@@ -807,7 +766,7 @@ mod tests {
         let result = tensor.min(vec![0, 1]);
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![-10.0, -8.0, -12.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![-10.0, -8.0, -12.0]));
     }
 
     #[test]
@@ -823,7 +782,7 @@ mod tests {
         let result = tensor1.prod(&tensor2);
 
         assert_eq!(result.shape(), &shape![3, 2].unwrap());
-        assert_eq!(result.data, vec![4.0, 5.0, 8.0, 10.0, 12.0, 15.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![4.0, 5.0, 8.0, 10.0, 12.0, 15.0]));
     }
 
     #[test]
@@ -839,7 +798,7 @@ mod tests {
         let result = tensor1.prod(&tensor2);
 
         assert_eq!(result.shape(), &shape![2, 2, 2].unwrap());
-        assert_eq!(result.data, vec![5.0, 6.0, 10.0, 12.0, 15.0, 18.0, 20.0, 24.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![5.0, 6.0, 10.0, 12.0, 15.0, 18.0, 20.0, 24.0]));
     }
 
     #[test]
@@ -855,7 +814,7 @@ mod tests {
         let result = tensor1.prod(&tensor2);
 
         assert_eq!(result.shape(), &shape![2, 2, 2, 2].unwrap());
-        assert_eq!(result.data, vec![5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0, 16.0, 15.0, 18.0, 21.0, 24.0, 20.0, 24.0, 28.0, 32.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0, 16.0, 15.0, 18.0, 21.0, 24.0, 20.0, 24.0, 28.0, 32.0]));
     }
 
     #[test]
@@ -867,7 +826,7 @@ mod tests {
         let result = tensor1 + 3.0;
 
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![4.0, 5.0, 6.0, 7.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![4.0, 5.0, 6.0, 7.0]));
     }
 
     #[test]
@@ -881,7 +840,7 @@ mod tests {
         let result = tensor1 + tensor2;
 
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![6.0, 8.0, 10.0, 12.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![6.0, 8.0, 10.0, 12.0]));
     }
 
     #[test]
@@ -894,7 +853,7 @@ mod tests {
         let result = tensor1 - 3.0;
 
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![2.0, 3.0, 4.0, 5.0]));
     }
 
     #[test]
@@ -908,7 +867,7 @@ mod tests {
         let result = tensor1 - tensor2;
 
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![4.0, 4.0, 4.0, 4.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![4.0, 4.0, 4.0, 4.0]));
     }
 
     #[test]
@@ -921,7 +880,7 @@ mod tests {
         let result = tensor1 * 2.0;
 
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![2.0, 4.0, 6.0, 8.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![2.0, 4.0, 6.0, 8.0]));
     }
 
     #[test]
@@ -936,7 +895,7 @@ mod tests {
         let result = tensor1 * tensor2;
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![10.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![10.0]));
     }
 
     #[test]
@@ -951,7 +910,7 @@ mod tests {
         let result = tensor1 * tensor2;
 
         assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, vec![40.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![40.0]));
     }
 
     #[test]
@@ -967,7 +926,7 @@ mod tests {
         let result = tensor_vec * tensor_matrix;
 
         assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, vec![9.0, 12.0, 15.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![9.0, 12.0, 15.0]));
     }
 
     #[test]
@@ -983,7 +942,7 @@ mod tests {
         let result = tensor_matrix * tensor_vec;
 
         assert_eq!(result.shape(), &shape![2].unwrap());
-        assert_eq!(result.data, vec![14.0, 32.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![14.0, 32.0]));
     }
 
     #[test]
@@ -999,7 +958,7 @@ mod tests {
         let result = tensor1 * tensor2;
 
         assert_eq!(result.shape(), &shape![2, 2].unwrap());
-        assert_eq!(result.data, vec![58.0, 64.0, 139.0, 154.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![58.0, 64.0, 139.0, 154.0]));
     }
 
     #[test]
@@ -1012,7 +971,7 @@ mod tests {
         let result = tensor1 / 2.0;
 
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, vec![2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(result.data, DynamicStorage::new(vec![2.0, 3.0, 4.0, 5.0]));
     }
 }
 
