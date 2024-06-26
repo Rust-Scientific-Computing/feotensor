@@ -5,7 +5,7 @@ use crate::error::ShapeError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Shape {
-    pub dims: Vec<usize>,
+    dims: Vec<usize>,
 }
 
 impl Shape {
@@ -23,12 +23,26 @@ impl Shape {
     pub fn order(&self) -> usize {
         self.dims.len()
     }
+
+    pub fn stack(&self, rhs: &Shape) -> Shape {
+        let mut new_dims = self.dims.clone();
+        new_dims.extend(rhs.dims.iter());
+        Shape { dims: new_dims }
+    }
 }
 
 impl Index<usize> for Shape {
     type Output = usize;
 
     fn index(&self, index: usize) -> &Self::Output {
+        &self.dims[index]
+    }
+}
+
+impl Index<std::ops::RangeFrom<usize>> for Shape {
+    type Output = [usize];
+
+    fn index(&self, index: std::ops::RangeFrom<usize>) -> &Self::Output {
         &self.dims[index]
     }
 }
@@ -82,5 +96,14 @@ mod tests {
     fn test_shape_macro() {
         let shape = shape![2, 3, 4].unwrap();
         assert_eq!(shape.dims, vec![2, 3, 4]);
+    }
+
+    
+    #[test]
+    fn test_shape_extend() {
+        let shape1 = Shape::new(vec![2, 3]).unwrap();
+        let shape2 = Shape::new(vec![4, 5]).unwrap();
+        let extended_shape = shape1.stack(&shape2);
+        assert_eq!(extended_shape.dims, vec![2, 3, 4, 5]);
     }
 }

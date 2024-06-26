@@ -32,19 +32,12 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     }
 
     pub fn fill(shape: &Shape, value: T) -> Tensor<T> {
-        let total_size = shape.size();
-        let mut vec = Vec::with_capacity(total_size);
-        for _ in 0..total_size { vec.push(value); }
+        let mut vec = Vec::with_capacity(shape.size());
+        for _ in 0..shape.size() { vec.push(value); }
         Tensor::new(shape, &vec).unwrap()
     }
-
-    pub fn zeros(shape: &Shape) -> Tensor<T> {
-        Tensor::fill(shape, T::zero())
-    }
-
-    pub fn ones(shape: &Shape) -> Tensor<T> {
-        Tensor::fill(shape, T::one())
-    }
+    pub fn zeros(shape: &Shape) -> Tensor<T> {Tensor::fill(shape, T::zero())}
+    pub fn ones(shape: &Shape) -> Tensor<T> {Tensor::fill(shape, T::one())}
 
     // Properties
     pub fn shape(&self) -> &Shape { &self.shape }
@@ -64,8 +57,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     pub fn sum(&self, axes: Axes) -> Tensor<T> {
         let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
-        let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
-        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let remaining_dims = remaining_axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
         if axes.is_empty() | (remaining_dims.len() == 0) {
@@ -95,7 +88,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     }
 
     pub fn mean(&self, axes: Axes) -> Tensor<T> {
-        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
         let removing_dims_t: Vec<T> = removing_dims.iter().map(|&dim| {
             let mut result = T::zero();
             for _ in 0..dim {
@@ -108,7 +101,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     }
 
     pub fn var(&self, axes: Axes) -> Tensor<T> {
-        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
         let removing_dims_t: Vec<T> = removing_dims.iter().map(|&dim| {
             let mut result = T::zero();
             for _ in 0..dim {
@@ -120,8 +113,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         
         let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
-        let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
-        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let remaining_dims = remaining_axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
         if axes.is_empty() | (remaining_dims.len() == 0) {
@@ -157,8 +150,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     pub fn max(&self, axes: Axes) -> Tensor<T> {
         let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
-        let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
-        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let remaining_dims = remaining_axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
         if axes.is_empty() | (remaining_dims.len() == 0) {
@@ -192,8 +185,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     pub fn min(&self, axes: Axes) -> Tensor<T> {
         let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
-        let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
-        let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
+        let remaining_dims = remaining_axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
+        let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
         if axes.is_empty() | (remaining_dims.len() == 0) {
@@ -227,9 +220,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     // Tensor Product
     // Consistent with numpy.tensordot(a, b, axis=0)
     pub fn prod(&self, other: &Tensor<T>) -> Tensor<T> {
-        let mut new_dims = self.shape.dims.clone();
-        new_dims.extend(&other.shape.dims);
-        let new_shape = Shape::new(new_dims).unwrap();
+        let new_shape = self.shape.stack(&other.shape);
 
         let mut new_data = Vec::with_capacity(self.size() * other.size());
         for &a in &self.data {

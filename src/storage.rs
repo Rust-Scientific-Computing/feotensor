@@ -22,14 +22,14 @@ impl<T> DynamicStorage<T> {
         }
 
         for (i, &dim) in coord.iter().enumerate() {
-            if dim >= shape.dims[i] {
+            if dim >= shape[i] {
                 return Err(ShapeError::new(format!("out of bounds for dimension {}", i).as_str()));
             }
         }
 
         let mut index = 0;
         for k in 0..shape.order() {
-            let stride = shape.dims[k+1..].iter().product::<usize>();
+            let stride = shape[k+1..].iter().product::<usize>();
             index += coord[k] * stride;
         }
         Ok(index)
