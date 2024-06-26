@@ -96,9 +96,11 @@ mod tests {
     fn test_shape_macro() {
         let shape = shape![2, 3, 4].unwrap();
         assert_eq!(shape.dims, vec![2, 3, 4]);
+
+        let shape = shape![1].unwrap();
+        assert_eq!(shape.dims, vec![1]);
     }
 
-    
     #[test]
     fn test_shape_extend() {
         let shape1 = Shape::new(vec![2, 3]).unwrap();
