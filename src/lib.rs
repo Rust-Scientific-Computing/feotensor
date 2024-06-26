@@ -71,7 +71,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
     // // Reduction operations
     pub fn sum(&self, axes: Axes) -> Tensor<T> {
-        let all_axes = (0..self.shape.len()).collect::<Vec<_>>();
+        let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
         let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
         let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
@@ -126,7 +126,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         }).collect();
         let n = removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x);
         
-        let all_axes = (0..self.shape.len()).collect::<Vec<_>>();
+        let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
         let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
         let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
@@ -162,7 +162,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     }
 
     pub fn max(&self, axes: Axes) -> Tensor<T> {
-        let all_axes = (0..self.shape.len()).collect::<Vec<_>>();
+        let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
         let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
         let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
@@ -196,7 +196,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     }
 
     pub fn min(&self, axes: Axes) -> Tensor<T> {
-        let all_axes = (0..self.shape.len()).collect::<Vec<_>>();
+        let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
         let remaining_dims = remaining_axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
         let removing_dims = axes.iter().map(|&i| self.shape.dims[i]).collect::<Vec<_>>();
@@ -249,7 +249,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     /// For the maths see: https://bit.ly/3KQjPa3
     fn calculate_index(&self, indices: &[usize]) -> usize {
         let mut index = 0;
-        for k in 0..self.shape.len() {
+        for k in 0..self.shape.order() {
             let stride = self.shape.dims[k+1..].iter().product::<usize>();
             index += indices[k] * stride;
         }
@@ -257,8 +257,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     }
 
     fn assert_indices(&self, indices: &[usize]) -> Result<(), ShapeError> {
-        if indices.len() != self.shape.len() {
-            let msg = format!("incorrect order ({} vs {}).", indices.len(), self.shape.len());
+        if indices.len() != self.shape.order() {
+            let msg = format!("incorrect order ({} vs {}).", indices.len(), self.shape.order());
             return Err(ShapeError::new(msg.as_str()));
         }
         for (i, &index) in indices.iter().enumerate() {
@@ -288,7 +288,7 @@ impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
     type Output = Tensor<T>;
 
     fn mul(self, rhs: Tensor<T>) -> Tensor<T> {
-    if self.shape.len() == 1 && rhs.shape.len() == 1 {
+    if self.shape.order() == 1 && rhs.shape.order() == 1 {
         // Vector-Vector multiplication (dot product)
         assert!(self.shape[0] == rhs.shape[0], "Vectors must be of the same length for dot product.");
         let mut result = T::zero();
@@ -296,7 +296,7 @@ impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
             result = result + self.data[i] * rhs.data[i];
         }
         Tensor::new(&shape![1].unwrap(), &vec![result]).unwrap()
-    } else if self.shape.len() == 1 && rhs.shape.len() == 2 {
+    } else if self.shape.order() == 1 && rhs.shape.order() == 2 {
         // Vector-Matrix multiplication
         assert!(self.shape[0] == rhs.shape[0], "The length of the vector must be equal to the number of rows in the matrix.");
         let mut result = Tensor::zeros(&shape![rhs.shape[1]].unwrap());
@@ -308,7 +308,7 @@ impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
             result.data[j] = sum;
         }
         result
-    } else if self.shape.len() == 2 && rhs.shape.len() == 1 {
+    } else if self.shape.order() == 2 && rhs.shape.order() == 1 {
         // Matrix-Vector multiplication
         assert!(self.shape[1] == rhs.shape[0], "The number of columns in the matrix must be equal to the length of the vector.");
         let mut result = Tensor::zeros(&shape![self.shape[0]].unwrap());
@@ -320,7 +320,7 @@ impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
             result.data[i] = sum;
         }
         result
-    } else if self.shape.len() == 2 && rhs.shape.len() == 2 {
+    } else if self.shape.order() == 2 && rhs.shape.order() == 2 {
         // Matrix-Matrix multiplication
         assert!(self.shape[1] == rhs.shape[0], "The number of columns in the first matrix must be equal to the number of rows in the second matrix.");
         let mut result = Tensor::zeros(&shape![self.shape[0], rhs.shape[1]].unwrap());

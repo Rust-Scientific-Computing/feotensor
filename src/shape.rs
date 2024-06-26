@@ -20,7 +20,7 @@ impl Shape {
         self.dims.iter().product()
     }
 
-    pub fn len(&self) -> usize {
+    pub fn order(&self) -> usize {
         self.dims.len()
     }
 }
