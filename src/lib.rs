@@ -5,10 +5,7 @@ pub mod coordinate;
 pub mod storage;
 
 use num::Num;
-use std::ops::Add;
-use std::ops::Sub;
-use std::ops::Mul;
-use std::ops::Div;
+use std::ops::{Add, Sub, Mul, Div};
 
 use crate::shape::Shape;
 use crate::iter::IndexIterator;

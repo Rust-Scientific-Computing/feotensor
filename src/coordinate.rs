@@ -1,6 +1,5 @@
 use std::fmt;
-use std::ops::Index;
-use std::ops::IndexMut;
+use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Coordinate {

@@ -1,5 +1,4 @@
-use std::ops::Index;
-use std::ops::IndexMut;
+use std::ops::{Index, IndexMut};
 
 use crate::coordinate::Coordinate;
 use crate::shape::Shape;
