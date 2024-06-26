@@ -59,3 +59,61 @@ macro_rules! coord {
         Coordinate::new(vec![$index; $count])
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_len() {
+        let coord = coord![1, 2, 3];
+        assert_eq!(coord.len(), 3);
+    }
+
+    #[test]
+    fn test_iter() {
+        let coord = coord![1, 2, 3];
+        let mut iter = coord.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_insert() {
+        let coord = coord![1, 2, 3];
+        let new_coord = coord.insert(1, 4);
+        assert_eq!(new_coord, coord![1, 4, 2, 3]);
+    }
+
+    #[test]
+    fn test_index() {
+        let coord = coord![1, 2, 3];
+        assert_eq!(coord[0], 1);
+        assert_eq!(coord[1], 2);
+        assert_eq!(coord[2], 3);
+    }
+
+    #[test]
+    fn test_index_mut() {
+        let mut coord = coord![1, 2, 3];
+        coord[1] = 4;
+        assert_eq!(coord[1], 4);
+    }
+
+    #[test]
+    fn test_display() {
+        let coord = coord![1, 2, 3];
+        assert_eq!(format!("{}", coord), "(1, 2, 3)");
+    }
+
+    #[test]
+    fn test_coord_macro() {
+        let coord = coord![1, 2, 3];
+        assert_eq!(coord, Coordinate::new(vec![1, 2, 3]));
+
+        let coord_repeated = coord![1; 3];
+        assert_eq!(coord_repeated, Coordinate::new(vec![1, 1, 1]));
+    }
+}

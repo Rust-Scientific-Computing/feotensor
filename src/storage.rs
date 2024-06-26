@@ -85,3 +85,81 @@ impl<'a, T> IntoIterator for &'a mut DynamicStorage<T> {
         self.data.iter_mut()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_iter() {
+        let storage = DynamicStorage::new(vec![1, 2, 3, 4]);
+        let mut iter = storage.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), Some(&4));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_mut() {
+        let mut storage = DynamicStorage::new(vec![1, 2, 3, 4]);
+        {
+            let mut iter = storage.iter_mut();
+            if let Some(x) = iter.next() {
+                *x = 10;
+            }
+        }
+        assert_eq!(storage.data, vec![10, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_index() {
+        let storage = DynamicStorage::new(vec![1, 2, 3, 4]);
+        assert_eq!(storage[0], 1);
+        assert_eq!(storage[1], 2);
+        assert_eq!(storage[2], 3);
+        assert_eq!(storage[3], 4);
+    }
+
+    #[test]
+    fn test_index_mut() {
+        let mut storage = DynamicStorage::new(vec![1, 2, 3, 4]);
+        storage[0] = 10;
+        assert_eq!(storage[0], 10);
+    }
+
+    #[test]
+    fn test_into_iter() {
+        let storage = DynamicStorage::new(vec![1, 2, 3, 4]);
+        let mut iter = storage.into_iter();
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next(), Some(4));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_into_iter_ref() {
+        let storage = DynamicStorage::new(vec![1, 2, 3, 4]);
+        let mut iter = (&storage).into_iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), Some(&4));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_into_iter_mut() {
+        let mut storage = DynamicStorage::new(vec![1, 2, 3, 4]);
+        {
+            let mut iter = (&mut storage).into_iter();
+            if let Some(x) = iter.next() {
+                *x = 10;
+            }
+        }
+        assert_eq!(storage.data, vec![10, 2, 3, 4]);
+    }
+}
