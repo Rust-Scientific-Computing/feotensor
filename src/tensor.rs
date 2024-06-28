@@ -1,4 +1,4 @@
-use num::Num;
+use num::{Num, Float};
 use std::ops::{Add, Sub, Mul, Div};
 
 use crate::shape;
@@ -250,6 +250,16 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         }
 
         Tensor::new(&new_shape, &new_data).unwrap()
+    }
+}
+
+impl<T: Float + PartialOrd + Copy> Tensor<T> {
+    pub fn pow(&self, power: T) -> Tensor<T> {
+        let mut result = Tensor::zeros(&self.shape);
+        for i in 0..self.size() {
+            result.data[i] = self.data[i].clone().powf(power);
+        }
+        result
     }
 }
 
@@ -1204,6 +1214,36 @@ mod tests {
         let tensor = Tensor::new(&shape, &data).unwrap();
         let display = tensor.display();
         assert_eq!(display, "[[[[1, 2],\n   [3, 4]],\n\n  [[5, 6],\n   [7, 8]]],\n\n\n [[[9, 10],\n   [11, 12]],\n\n  [[13, 14],\n   [15, 16]]]]");
+    }
+
+    #[test]
+    fn test_pow_tensor_square() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let result = tensor.pow(2.0);
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, DynamicStorage::new(vec![1.0, 4.0, 9.0, 16.0]));
+    }
+
+    #[test]
+    fn test_pow_tensor_sqrt() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 4.0, 9.0, 16.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let result = tensor.pow(0.5);
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, DynamicStorage::new(vec![1.0, 2.0, 3.0, 4.0]));
+    }
+
+    #[test]
+    fn test_pow_tensor_negative_exponent() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 4.0, 8.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let result = tensor.pow(-1.0);
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, DynamicStorage::new(vec![1.0, 0.5, 0.25, 0.125]));
     }
 }
 

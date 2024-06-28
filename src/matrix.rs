@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub, Mul, Div, Deref, Index, IndexMut, DerefMut};
 
-use num::Num;
+use num::{Num, Float};
 use crate::error::ShapeError;
 use crate::shape;
 use crate::coord;
@@ -87,6 +87,12 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
             result.set(&coord![i], sum).unwrap();
         }
         DynamicVector::from_tensor(result).unwrap()
+    }
+}
+
+impl<T: Float + PartialOrd + Copy> DynamicMatrix<T> {
+    pub fn pow(&self, power: T) -> DynamicMatrix<T> {
+        DynamicMatrix::from_tensor(self.tensor.pow(power)).unwrap()
     }
 }
 
@@ -605,5 +611,18 @@ mod tests {
         assert_eq!(matrix[coord![0, 1]], 2.0);
         assert_eq!(matrix[coord![1, 0]], 3.0);
         assert_eq!(matrix[coord![1, 1]], 4.0);
+    }
+
+    #[test]
+    fn test_pow_matrix() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![2.0, 3.0, 4.0, 5.0];
+        let matrix = DynamicMatrix::new(&shape, &data).unwrap();
+        let result = matrix.pow(2.0);
+        assert_eq!(result[coord![0, 0]], 4.0);
+        assert_eq!(result[coord![0, 1]], 9.0);
+        assert_eq!(result[coord![1, 0]], 16.0);
+        assert_eq!(result[coord![1, 1]], 25.0);
+        assert_eq!(result.shape(), &shape);
     }
 }
