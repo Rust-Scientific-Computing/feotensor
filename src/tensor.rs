@@ -429,12 +429,12 @@ impl<T: Num + PartialOrd + Copy> Div<DynamicMatrix<T>> for Tensor<T> {
 
 impl<T: Num + PartialOrd + Copy + std::fmt::Display> Tensor<T> {
     pub fn display(&self) -> String {
-        fn format_tensor<T: Num + PartialOrd + Copy + std::fmt::Display>(data: &[T], shape: &[usize], level: usize) -> String {
-            if shape.len() == 1 {
+        fn format_tensor<T: Num + PartialOrd + Copy + std::fmt::Display>(data: &DynamicStorage<T>, shape: &Shape, level: usize) -> String {
+            if shape.order() == 1 {
                 let mut result = String::from("[");
                 for (i, item) in data.iter().enumerate() {
                     result.push_str(&format!("{}", item));
-                    if i < data.len() - 1 {
+                    if i < data.size() - 1 {
                         result.push_str(", ");
                     }
                 }
@@ -443,21 +443,25 @@ impl<T: Num + PartialOrd + Copy + std::fmt::Display> Tensor<T> {
             }
 
             let mut result = String::from("[");
-            let sub_size = shape[1..].iter().product();
+            let sub_size = Shape::new(shape[1..].to_vec()).unwrap().size();
             for i in 0..shape[0] {
                 if i > 0 {
                     result.push_str(",\n");
+                    for _ in 0..shape.order() - 2 {
+                        result.push('\n');
+                    }
                     for _ in 0..level {
                         result.push(' ');
                     }
                 }
-                result.push_str(&format_tensor(&data[i * sub_size..(i + 1) * sub_size], &shape[1..], level + 1));
+                let sub_data = DynamicStorage::new(data[i * sub_size..(i + 1) * sub_size].to_vec());
+                result.push_str(&format_tensor(&sub_data, &Shape::new(shape[1..].to_vec()).unwrap(), level + 1));
             }
             result.push(']');
             result
         }
 
-        format_tensor(&self.data, &self.shape.dims(), 1)
+        format_tensor(&self.data, &self.shape, 1)
     }
 }
 

@@ -35,6 +35,10 @@ impl<T> DynamicStorage<T> {
         Ok(index)
     }
 
+    pub fn size(&self) -> usize {
+        self.data.len()
+    }
+
     pub fn iter(&self) -> std::slice::Iter<'_, T> {
         self.data.iter()
     }
@@ -49,6 +53,15 @@ impl<T> Index<usize> for DynamicStorage<T> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
+    }
+
+}
+
+impl<T> Index<std::ops::Range<usize>> for DynamicStorage<T> {
+    type Output = [T];
+
+    fn index(&self, range: std::ops::Range<usize>) -> &Self::Output {
+        &self.data[range]
     }
 }
 
