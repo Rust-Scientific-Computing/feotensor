@@ -31,6 +31,13 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
         let data = vec![value; shape.size()];
         DynamicMatrix::new(shape, &data)
     }
+    pub fn eye(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
+        let mut result = DynamicMatrix::zeros(shape).unwrap();
+        for i in 0..shape[0] {
+            result.set(&coord![i, i], T::one()).unwrap();
+        }
+        Ok(result)
+    }
     pub fn zeros(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> { Self::fill(shape, T::zero()) }
     pub fn ones(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> { Self::fill(shape, T::one()) }
 
@@ -275,6 +282,22 @@ mod tests {
         assert_eq!(matrix[coord![0, 1]], 3.0);
         assert_eq!(matrix[coord![1, 0]], 3.0);
         assert_eq!(matrix[coord![1, 1]], 3.0);
+    }
+
+    #[test]
+    fn test_eye() {
+        let shape = shape![3, 3].unwrap();
+        let matrix = DynamicMatrix::<f64>::eye(&shape).unwrap();
+        assert_eq!(matrix.shape(), &shape);
+        assert_eq!(matrix[coord![0, 0]], 1.0);
+        assert_eq!(matrix[coord![0, 1]], 0.0);
+        assert_eq!(matrix[coord![0, 2]], 0.0);
+        assert_eq!(matrix[coord![1, 0]], 0.0);
+        assert_eq!(matrix[coord![1, 1]], 1.0);
+        assert_eq!(matrix[coord![1, 2]], 0.0);
+        assert_eq!(matrix[coord![2, 0]], 0.0);
+        assert_eq!(matrix[coord![2, 1]], 0.0);
+        assert_eq!(matrix[coord![2, 2]], 1.0);
     }
 
     #[test]
