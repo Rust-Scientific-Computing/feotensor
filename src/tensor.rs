@@ -427,6 +427,41 @@ impl<T: Num + PartialOrd + Copy> Div<DynamicMatrix<T>> for Tensor<T> {
     }
 }
 
+impl<T: Num + PartialOrd + Copy + std::fmt::Display> Tensor<T> {
+    pub fn display(&self) -> String {
+        fn format_tensor<T: Num + PartialOrd + Copy + std::fmt::Display>(data: &[T], shape: &[usize], level: usize) -> String {
+            if shape.len() == 1 {
+                let mut result = String::from("[");
+                for (i, item) in data.iter().enumerate() {
+                    result.push_str(&format!("{}", item));
+                    if i < data.len() - 1 {
+                        result.push_str(", ");
+                    }
+                }
+                result.push(']');
+                return result;
+            }
+
+            let mut result = String::from("[");
+            let sub_size = shape[1..].iter().product();
+            for i in 0..shape[0] {
+                if i > 0 {
+                    result.push_str(",\n");
+                    for _ in 0..level {
+                        result.push(' ');
+                    }
+                }
+                result.push_str(&format_tensor(&data[i * sub_size..(i + 1) * sub_size], &shape[1..], level + 1));
+            }
+            result.push(']');
+            result
+        }
+
+        format_tensor(&self.data, &self.shape.dims(), 1)
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1126,6 +1161,45 @@ mod tests {
         assert_eq!(result[coord![1, 0]], 2.0);
         assert_eq!(result[coord![1, 1]], 2.0);
         assert_eq!(result.shape(), &shape);
+    }
+
+    #[test]
+    fn test_display_1d_tensor() {
+        let shape = shape![3].unwrap();
+        let data = vec![1.0, 2.0, 3.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let display = tensor.display();
+        assert_eq!(display, "[1, 2, 3]");
+    }
+
+    #[test]
+    fn test_display_2d_tensor() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let display = tensor.display();
+        assert_eq!(display, "[[1, 2],\n [3, 4]]");
+    }
+
+    #[test]
+    fn test_display_3d_tensor() {
+        let shape = shape![2, 2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let display = tensor.display();
+        assert_eq!(display, "[[[1, 2],\n  [3, 4]],\n\n [[5, 6],\n  [7, 8]]]");
+    }
+
+    #[test]
+    fn test_display_4d_tensor() {
+        let shape = shape![2, 2, 2, 2].unwrap();
+        let data = vec![
+            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0,
+            9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0
+        ];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let display = tensor.display();
+        assert_eq!(display, "[[[[1, 2],\n   [3, 4]],\n\n  [[5, 6],\n   [7, 8]]],\n\n\n [[[9, 10],\n   [11, 12]],\n\n  [[13, 14],\n   [15, 16]]]]");
     }
 }
 
