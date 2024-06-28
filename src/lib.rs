@@ -4,3 +4,6 @@ pub mod error;
 pub mod coordinate;
 pub mod storage;
 pub mod tensor;
+pub mod vector;
+pub mod matrix;
+pub mod axes;

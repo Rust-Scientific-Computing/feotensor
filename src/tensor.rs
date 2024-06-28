@@ -7,15 +7,16 @@ use crate::iter::IndexIterator;
 use crate::error::ShapeError;
 use crate::coordinate::Coordinate;
 use crate::storage::DynamicStorage;
-
-pub type Axes = Vec<usize>;
+use crate::axes::Axes;
+use crate::vector::DynamicVector;
+use crate::matrix::DynamicMatrix;
 
 #[derive(Debug)]
 pub struct DynamicTensor<T: Num> {
     data: DynamicStorage<T>,
     shape: Shape
 }
-type Tensor<T> = DynamicTensor<T>;  // Alias for convenience
+pub type Tensor<T> = DynamicTensor<T>;  // Alias for convenience
 
 impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
@@ -38,11 +39,16 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
     pub fn shape(&self) -> &Shape { &self.shape }
     pub fn size(&self) -> usize { self.shape.size() }
 
-    pub fn get_element(&self, coord: &Coordinate) -> Result<&T, ShapeError> {
+    pub fn get(&self, coord: &Coordinate) -> Result<&T, ShapeError> {
         Ok(&self.data[self.data.flatten(coord, &self.shape)?])
     }
 
-    pub fn set_element(&mut self, coord: &Coordinate, value: T) -> Result<(), ShapeError> {
+    pub fn get_mut(&mut self, coord: &Coordinate) -> Result<&mut T, ShapeError> {
+        let index = self.data.flatten(coord, &self.shape)?;
+        Ok(&mut self.data[index])
+    }
+
+    pub fn set(&mut self, coord: &Coordinate, value: T) -> Result<(), ShapeError> {
         let index = self.data.flatten(coord, &self.shape)?;
         self.data[index] = value;
         Ok(())
@@ -74,8 +80,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
                     indices = indices.insert(axis, sum_index[i]);
                 }
 
-                let value = *t.get_element(&target).unwrap() + *self.get_element(&indices).unwrap();
-                let _ = t.set_element(&target, value).unwrap();
+                let value = *t.get(&target).unwrap() + *self.get(&indices).unwrap();
+                let _ = t.set(&target, value).unwrap();
             }
         }
 
@@ -91,7 +97,15 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
             }
             result
         }).collect();
-        let n = removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x);
+        let n = if removing_dims_t.len() != 0 {
+            removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x)
+        } else {
+            let mut sum = T::zero();
+            for _ in 0..self.shape().size() {
+                sum = sum + T::one();
+            }
+            sum
+        };
         self.sum(axes) / n
     }
 
@@ -104,7 +118,16 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
             }
             result
         }).collect();
-        let n = removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x);
+
+        let n = if removing_dims_t.len() != 0 {
+            removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x)
+        } else {
+            let mut sum = T::zero();
+            for _ in 0..self.shape().size() {
+                sum = sum + T::one();
+            }
+            sum
+        };
         
         let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes.clone().into_iter().filter(|&i| !axes.contains(&i)).collect::<Vec<_>>();
@@ -133,9 +156,9 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
                     indices = indices.insert(axis, sum_index[i]);
                 }
 
-                let centered = *self.get_element(&indices).unwrap() - *mean.get_element(&target).unwrap();
-                let value = *t.get_element(&target).unwrap() + centered * centered;
-                let _ = t.set_element(&target, value).unwrap();
+                let centered = *self.get(&indices).unwrap() - *mean.get(&target).unwrap();
+                let value = *t.get(&target).unwrap() + centered * centered;
+                let _ = t.set(&target, value).unwrap();
             }
         }
 
@@ -150,7 +173,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
         // We resolve to a scalar value
         if axes.is_empty() | (remaining_dims.len() == 0) {
-            let max: T = self.data.iter().fold(T::zero(), |acc, x| if acc > *x { acc } else { *x });
+            let min: T = self.data.iter().fold(T::zero(), |acc, x| if acc < *x { acc } else { *x });
+            let max: T = self.data.iter().fold(min, |acc, x| if acc > *x { acc } else { *x });
             return Tensor::new(&Shape::new(vec![1]).unwrap(), &[max]).unwrap();
         }
 
@@ -168,8 +192,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
                     indices = indices.insert(axis, max_index[i]);
                 }
 
-                if self.get_element(&indices).unwrap() > t.get_element(&target).unwrap() {
-                    let _ = t.set_element(&target, *self.get_element(&indices).unwrap());
+                if self.get(&indices).unwrap() > t.get(&target).unwrap() {
+                    let _ = t.set(&target, *self.get(&indices).unwrap());
                 }
             }
         }
@@ -185,7 +209,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
         // We resolve to a scalar value
         if axes.is_empty() | (remaining_dims.len() == 0) {
-            let min: T = self.data.iter().fold(T::zero(), |acc, x| if acc < *x { acc } else { *x });
+            let max: T = self.data.iter().fold(T::zero(), |acc, x| if acc > *x { acc } else { *x });
+            let min: T = self.data.iter().fold(max, |acc, x| if acc < *x { acc } else { *x });
             return Tensor::new(&Shape::new(vec![1]).unwrap(), &[min]).unwrap();
         }
 
@@ -203,8 +228,8 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
                     indices = indices.insert(axis, min_index[i]);
                 }
 
-                if self.get_element(&indices).unwrap() < t.get_element(&target).unwrap() {
-                    let _ = t.set_element(&target, *self.get_element(&indices).unwrap());
+                if self.get(&indices).unwrap() < t.get(&target).unwrap() {
+                    let _ = t.set(&target, *self.get(&indices).unwrap());
                 }
             }
         }
@@ -241,63 +266,6 @@ impl<T: Num + PartialOrd + Copy> Mul<T> for Tensor<T> {
     }
 }
 
-// Vector/Matrix Multiplication
-impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
-    type Output = Tensor<T>;
-
-    fn mul(self, rhs: Tensor<T>) -> Tensor<T> {
-    if self.shape.order() == 1 && rhs.shape.order() == 1 {
-        // Vector-Vector multiplication (dot product)
-        assert!(self.shape[0] == rhs.shape[0], "Vectors must be of the same length for dot product.");
-        let mut result = T::zero();
-        for i in 0..self.shape[0] {
-            result = result + self.data[i] * rhs.data[i];
-        }
-        Tensor::new(&shape![1].unwrap(), &vec![result]).unwrap()
-    } else if self.shape.order() == 1 && rhs.shape.order() == 2 {
-        // Vector-Matrix multiplication
-        assert!(self.shape[0] == rhs.shape[0], "The length of the vector must be equal to the number of rows in the matrix.");
-        let mut result = Tensor::zeros(&shape![rhs.shape[1]].unwrap());
-        for j in 0..rhs.shape[1] {
-            let mut sum = T::zero();
-            for i in 0..self.shape[0] {
-                sum = sum + self.data[i] * rhs.data[i * rhs.shape[1] + j];
-            }
-            result.data[j] = sum;
-        }
-        result
-    } else if self.shape.order() == 2 && rhs.shape.order() == 1 {
-        // Matrix-Vector multiplication
-        assert!(self.shape[1] == rhs.shape[0], "The number of columns in the matrix must be equal to the length of the vector.");
-        let mut result = Tensor::zeros(&shape![self.shape[0]].unwrap());
-        for i in 0..self.shape[0] {
-            let mut sum = T::zero();
-            for j in 0..self.shape[1] {
-                sum = sum + self.data[i * self.shape[1] + j] * rhs.data[j];
-            }
-            result.data[i] = sum;
-        }
-        result
-    } else if self.shape.order() == 2 && rhs.shape.order() == 2 {
-        // Matrix-Matrix multiplication
-        assert!(self.shape[1] == rhs.shape[0], "The number of columns in the first matrix must be equal to the number of rows in the second matrix.");
-        let mut result = Tensor::zeros(&shape![self.shape[0], rhs.shape[1]].unwrap());
-        for i in 0..self.shape[0] {
-            for j in 0..rhs.shape[1] {
-                let mut sum = T::zero();
-                for k in 0..self.shape[1] {
-                    sum = sum + self.data[i * self.shape[1] + k] * rhs.data[k * rhs.shape[1] + j];
-                }
-                result.data[i * rhs.shape[1] + j] = sum;
-            }
-        }
-        result
-    } else {
-        panic!("Unsupported shapes for multiplication.");
-    }
-    }
-}
-
 // Element-wise Addition
 impl<T: Num + PartialOrd + Copy> Add<T> for Tensor<T> {
     type Output = Tensor<T>;
@@ -322,6 +290,22 @@ impl<T: Num + PartialOrd + Copy> Add<Tensor<T>> for Tensor<T> {
             result.data[i] = self.data[i].clone() + rhs.data[i].clone();
         }
         result
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> Add<DynamicVector<T>> for Tensor<T> {
+    type Output = DynamicVector<T>;
+
+    fn add(self, rhs: DynamicVector<T>) -> DynamicVector<T> {
+       rhs + self 
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> Add<DynamicMatrix<T>> for Tensor<T> {
+    type Output = DynamicMatrix<T>;
+
+    fn add(self, rhs: DynamicMatrix<T>) -> DynamicMatrix<T> {
+       rhs + self 
     }
 }
 
@@ -353,6 +337,52 @@ impl<T: Num + PartialOrd + Copy> Sub<Tensor<T>> for Tensor<T> {
     }
 }
 
+impl<T: Num + PartialOrd + Copy> Sub<DynamicVector<T>> for Tensor<T> {
+    type Output = DynamicVector<T>;
+
+    fn sub(self, rhs: DynamicVector<T>) -> DynamicVector<T> {
+       (rhs * (T::zero() - T::one())) + self 
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> Sub<DynamicMatrix<T>> for Tensor<T> {
+    type Output = DynamicMatrix<T>;
+
+    fn sub(self, rhs: DynamicMatrix<T>) -> DynamicMatrix<T> {
+       (rhs * (T::zero() - T::one())) + self 
+    }
+}
+
+// Tensor Multiplication
+impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
+    type Output = Tensor<T>;
+
+    fn mul(self, rhs: Tensor<T>) -> Tensor<T> {
+        assert!(self.shape == rhs.shape);
+        let mut result = Tensor::zeros(&self.shape);
+        for i in 0..self.size() {
+            result.data[i] = self.data[i].clone() * rhs.data[i].clone();
+        }
+        result
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> Mul<DynamicVector<T>> for Tensor<T> {
+    type Output = DynamicVector<T>;
+
+    fn mul(self, rhs: DynamicVector<T>) -> DynamicVector<T> {
+       rhs * self 
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> Mul<DynamicMatrix<T>> for Tensor<T> {
+    type Output = DynamicMatrix<T>;
+
+    fn mul(self, rhs: DynamicMatrix<T>) -> DynamicMatrix<T> {
+       rhs * self 
+    }
+}
+
 // Element-wise Division
 impl<T: Num + PartialOrd + Copy> Div<T> for Tensor<T>
 {
@@ -367,6 +397,35 @@ impl<T: Num + PartialOrd + Copy> Div<T> for Tensor<T>
     }
 }
 
+// Tensor Division
+impl<T: Num + PartialOrd + Copy> Div<Tensor<T>> for Tensor<T> {
+    type Output = Tensor<T>;
+
+    fn div(self, rhs: Tensor<T>) -> Tensor<T> {
+        assert!(self.shape == rhs.shape);
+        let mut result = Tensor::zeros(&self.shape);
+        for i in 0..self.size() {
+            result.data[i] = self.data[i].clone() / rhs.data[i].clone();
+        }
+        result
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> Div<DynamicVector<T>> for Tensor<T> {
+    type Output = DynamicVector<T>;
+
+    fn div(self, rhs: DynamicVector<T>) -> DynamicVector<T> {
+        DynamicVector::<T>::from_tensor(self).unwrap() / rhs
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> Div<DynamicMatrix<T>> for Tensor<T> {
+    type Output = DynamicMatrix<T>;
+
+    fn div(self, rhs: DynamicMatrix<T>) -> DynamicMatrix<T> {
+        DynamicMatrix::<T>::from_tensor(self).unwrap() / rhs
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -437,17 +496,16 @@ mod tests {
         assert_eq!(tensor.size(), 6);
     }
 
-
     #[test]
     fn test_tensor_get() {
         let shape = shape![2, 2].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert_eq!(*tensor.get_element(&coord![0, 0]).unwrap(), 1.0);
-        assert_eq!(*tensor.get_element(&coord![0, 1]).unwrap(), 2.0);
-        assert_eq!(*tensor.get_element(&coord![1, 0]).unwrap(), 3.0);
-        assert_eq!(*tensor.get_element(&coord![1, 1]).unwrap(), 4.0);
+        assert_eq!(*tensor.get(&coord![0, 0]).unwrap(), 1.0);
+        assert_eq!(*tensor.get(&coord![0, 1]).unwrap(), 2.0);
+        assert_eq!(*tensor.get(&coord![1, 0]).unwrap(), 3.0);
+        assert_eq!(*tensor.get(&coord![1, 1]).unwrap(), 4.0);
     }
 
     #[test]
@@ -456,15 +514,15 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut tensor = Tensor::new(&shape, &data).unwrap();
 
-        tensor.set_element(&coord![0, 0], 5.0).unwrap();
-        tensor.set_element(&coord![0, 1], 6.0).unwrap();
-        tensor.set_element(&coord![1, 0], 7.0).unwrap();
-        tensor.set_element(&coord![1, 1], 8.0).unwrap();
+        tensor.set(&coord![0, 0], 5.0).unwrap();
+        tensor.set(&coord![0, 1], 6.0).unwrap();
+        tensor.set(&coord![1, 0], 7.0).unwrap();
+        tensor.set(&coord![1, 1], 8.0).unwrap();
 
-        assert_eq!(*tensor.get_element(&coord![0, 0]).unwrap(), 5.0);
-        assert_eq!(*tensor.get_element(&coord![0, 1]).unwrap(), 6.0);
-        assert_eq!(*tensor.get_element(&coord![1, 0]).unwrap(), 7.0);
-        assert_eq!(*tensor.get_element(&coord![1, 1]).unwrap(), 8.0);
+        assert_eq!(*tensor.get(&coord![0, 0]).unwrap(), 5.0);
+        assert_eq!(*tensor.get(&coord![0, 1]).unwrap(), 6.0);
+        assert_eq!(*tensor.get(&coord![1, 0]).unwrap(), 7.0);
+        assert_eq!(*tensor.get(&coord![1, 1]).unwrap(), 8.0);
     }
 
     #[test]
@@ -473,9 +531,9 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert!(tensor.get_element(&coord![2, 0]).is_err());
-        assert!(tensor.get_element(&coord![0, 2]).is_err());
-        assert!(tensor.get_element(&coord![2, 2]).is_err());
+        assert!(tensor.get(&coord![2, 0]).is_err());
+        assert!(tensor.get(&coord![0, 2]).is_err());
+        assert!(tensor.get(&coord![2, 2]).is_err());
     }
 
     #[test]
@@ -484,9 +542,9 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert!(tensor.set_element(&coord![2, 0], 5.0).is_err());
-        assert!(tensor.set_element(&coord![0, 2], 6.0).is_err());
-        assert!(tensor.set_element(&coord![2, 2], 7.0).is_err());
+        assert!(tensor.set(&coord![2, 0], 5.0).is_err());
+        assert!(tensor.set(&coord![0, 2], 6.0).is_err());
+        assert!(tensor.set(&coord![2, 2], 7.0).is_err());
     }
 
     #[test]
@@ -586,6 +644,18 @@ mod tests {
     }
 
     #[test]
+    fn test_tensor_mean_no_axis_2d() {
+        let shape = shape![2, 3].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+
+        let result = tensor.mean(vec![]);
+
+        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.data, DynamicStorage::new(vec![3.5]));
+    }
+
+    #[test]
     fn test_tensor_mean_one_axis_2d() {
         let shape = shape![2, 3].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
@@ -631,6 +701,18 @@ mod tests {
 
         assert_eq!(result.shape(), &shape![3].unwrap());
         assert_eq!(result.data, DynamicStorage::new(vec![5.5, 6.5, 7.5]));
+    }
+
+    #[test]
+    fn test_tensor_var_no_axis_2d() {
+        let shape = shape![2, 3].unwrap();
+        let data = vec![1.0, 1.0, 1.0, 7.0, 7.0, 7.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+
+        let result = tensor.var(vec![]);
+
+        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.data, DynamicStorage::new(vec![9.0]));
     }
 
     #[test]
@@ -868,6 +950,19 @@ mod tests {
     }
 
     #[test]
+    fn test_div_tensor() {
+        let shape = shape![4].unwrap();
+        let data1 = vec![4.0, 6.0, 8.0, 10.0];
+
+        let tensor1 = Tensor::new(&shape, &data1).unwrap();
+
+        let result = tensor1 / 2.0;
+
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, DynamicStorage::new(vec![2.0, 3.0, 4.0, 5.0]));
+    }
+
+    #[test]
     fn test_vec_vec_mul_single() {
         let shape = shape![1].unwrap();
         let data1 = vec![2.0];
@@ -893,46 +988,14 @@ mod tests {
 
         let result = tensor1 * tensor2;
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
-        assert_eq!(result.data, DynamicStorage::new(vec![40.0]));
-    }
-
-    #[test]
-    fn test_vec_matrix_mul() {
-        let shape_vec = shape![2].unwrap();
-        let shape_matrix = shape![2, 3].unwrap();
-        let data_vec = vec![1.0, 2.0];
-        let data_matrix = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
-
-        let tensor_vec = Tensor::new(&shape_vec, &data_vec).unwrap();
-        let tensor_matrix = Tensor::new(&shape_matrix, &data_matrix).unwrap();
-
-        let result = tensor_vec * tensor_matrix;
-
-        assert_eq!(result.shape(), &shape![3].unwrap());
-        assert_eq!(result.data, DynamicStorage::new(vec![9.0, 12.0, 15.0]));
-    }
-
-    #[test]
-    fn test_matrix_vec_mul() {
-        let shape_matrix = shape![2, 3].unwrap();
-        let shape_vec = shape![3].unwrap();
-        let data_matrix = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
-        let data_vec = vec![1.0, 2.0, 3.0];
-
-        let tensor_matrix = Tensor::new(&shape_matrix, &data_matrix).unwrap();
-        let tensor_vec = Tensor::new(&shape_vec, &data_vec).unwrap();
-
-        let result = tensor_matrix * tensor_vec;
-
-        assert_eq!(result.shape(), &shape![2].unwrap());
-        assert_eq!(result.data, DynamicStorage::new(vec![14.0, 32.0]));
+        assert_eq!(result.shape(), &shape);
+        assert_eq!(result.data, DynamicStorage::new(vec![2.0, 6.0, 12.0, 20.0]));
     }
 
     #[test]
     fn test_matrix_matrix_mul() {
         let shape1 = shape![2, 3].unwrap();
-        let shape2 = shape![3, 2].unwrap();
+        let shape2 = shape![2, 3].unwrap();
         let data1 = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let data2 = vec![7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
 
@@ -941,21 +1004,128 @@ mod tests {
 
         let result = tensor1 * tensor2;
 
-        assert_eq!(result.shape(), &shape![2, 2].unwrap());
-        assert_eq!(result.data, DynamicStorage::new(vec![58.0, 64.0, 139.0, 154.0]));
+        assert_eq!(result.shape(), &shape![2, 3].unwrap());
+        assert_eq!(result.data, DynamicStorage::new(vec![7.0, 16.0, 27.0, 40.0, 55.0, 72.0]));
     }
 
     #[test]
-    fn test_div_tensor() {
+    fn test_add_tensor_vector() {
         let shape = shape![4].unwrap();
-        let data1 = vec![4.0, 6.0, 8.0, 10.0];
-
-        let tensor1 = Tensor::new(&shape, &data1).unwrap();
-
-        let result = tensor1 / 2.0;
-
+        let data1 = vec![1.0, 2.0, 3.0, 4.0];
+        let data2 = vec![2.0, 3.0, 4.0, 5.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let vector = DynamicVector::new(&data2).unwrap();
+        let result = tensor + vector;
+        assert_eq!(result[0], 3.0);
+        assert_eq!(result[1], 5.0);
+        assert_eq!(result[2], 7.0);
+        assert_eq!(result[3], 9.0);
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result.data, DynamicStorage::new(vec![2.0, 3.0, 4.0, 5.0]));
+    }
+
+    #[test]
+    fn test_sub_tensor_vector() {
+        let shape = shape![4].unwrap();
+        let data1 = vec![2.0, 3.0, 4.0, 5.0];
+        let data2 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let vector = DynamicVector::new(&data2).unwrap();
+        let result = tensor - vector;
+        assert_eq!(result[0], 1.0);
+        assert_eq!(result[1], 1.0);
+        assert_eq!(result[2], 1.0);
+        assert_eq!(result[3], 1.0);
+        assert_eq!(result.shape(), &shape);
+    }
+
+    #[test]
+    fn test_mul_tensor_vector() {
+        let shape = shape![4].unwrap();
+        let data1 = vec![2.0, 3.0, 4.0, 5.0];
+        let data2 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let vector = DynamicVector::new(&data2).unwrap();
+        let result = tensor * vector;
+        assert_eq!(result[0], 2.0);
+        assert_eq!(result[1], 6.0);
+        assert_eq!(result[2], 12.0);
+        assert_eq!(result[3], 20.0);
+        assert_eq!(result.shape(), &shape);
+    }
+
+    #[test]
+    fn test_div_tensor_vector() {
+        let shape = shape![4].unwrap();
+        let data1 = vec![2.0, 4.0, 6.0, 8.0];
+        let data2 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let vector = DynamicVector::new(&data2).unwrap();
+        let result = tensor / vector;
+        assert_eq!(result[0], 2.0);
+        assert_eq!(result[1], 2.0);
+        assert_eq!(result[2], 2.0);
+        assert_eq!(result[3], 2.0);
+        assert_eq!(result.shape(), &shape);
+    }
+
+    #[test]
+    fn test_add_tensor_matrix() {
+        let shape = shape![2, 2].unwrap();
+        let data1 = vec![1.0, 2.0, 3.0, 4.0];
+        let data2 = vec![2.0, 3.0, 4.0, 5.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
+        let result = tensor + matrix;
+        assert_eq!(result[coord![0, 0]], 3.0);
+        assert_eq!(result[coord![0, 1]], 5.0);
+        assert_eq!(result[coord![1, 0]], 7.0);
+        assert_eq!(result[coord![1, 1]], 9.0);
+        assert_eq!(result.shape(), &shape);
+    }
+
+    #[test]
+    fn test_sub_tensor_matrix() {
+        let shape = shape![2, 2].unwrap();
+        let data1 = vec![2.0, 3.0, 4.0, 5.0];
+        let data2 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
+        let result = tensor - matrix;
+        assert_eq!(result[coord![0, 0]], 1.0);
+        assert_eq!(result[coord![0, 1]], 1.0);
+        assert_eq!(result[coord![1, 0]], 1.0);
+        assert_eq!(result[coord![1, 1]], 1.0);
+        assert_eq!(result.shape(), &shape);
+    }
+
+    #[test]
+    fn test_mul_tensor_matrix() {
+        let shape = shape![2, 2].unwrap();
+        let data1 = vec![2.0, 3.0, 4.0, 5.0];
+        let data2 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
+        let result = tensor * matrix;
+        assert_eq!(result[coord![0, 0]], 2.0);
+        assert_eq!(result[coord![0, 1]], 6.0);
+        assert_eq!(result[coord![1, 0]], 12.0);
+        assert_eq!(result[coord![1, 1]], 20.0);
+        assert_eq!(result.shape(), &shape);
+    }
+
+    #[test]
+    fn test_div_tensor_matrix() {
+        let shape = shape![2, 2].unwrap();
+        let data1 = vec![2.0, 4.0, 6.0, 8.0];
+        let data2 = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = DynamicTensor::new(&shape, &data1).unwrap();
+        let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
+        let result = tensor / matrix;
+        assert_eq!(result[coord![0, 0]], 2.0);
+        assert_eq!(result[coord![0, 1]], 2.0);
+        assert_eq!(result[coord![1, 0]], 2.0);
+        assert_eq!(result[coord![1, 1]], 2.0);
+        assert_eq!(result.shape(), &shape);
     }
 }
 

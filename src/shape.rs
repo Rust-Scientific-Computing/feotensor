@@ -58,7 +58,10 @@ impl fmt::Display for Shape {
 #[macro_export]
 macro_rules! shape {
     ($($dim:expr),*) => {
-        Shape::new(vec![$($dim),*])
+        {
+            use $crate::shape::Shape;
+            Shape::new(vec![$($dim),*])
+        }
     };
 }
 

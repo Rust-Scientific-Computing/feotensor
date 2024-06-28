@@ -51,11 +51,17 @@ impl fmt::Display for Coordinate {
 #[macro_export]
 macro_rules! coord {
     ($($index:expr),*) => {
-        Coordinate::new(vec![$($index),*])
+        {
+            use $crate::coordinate::Coordinate;
+            Coordinate::new(vec![$($index),*])
+        }
     };
 
     ($index:expr; $count:expr) => {
-        Coordinate::new(vec![$index; $count])
+        {
+            use $crate::coordinate::Coordinate;
+            Coordinate::new(vec![$index; $count])
+        }
     };
 }
 
