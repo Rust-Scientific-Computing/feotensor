@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "16:00"
+      timezone: "Europe/London"
+    commit-message:
+      prefix: "fix(deps)"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "Rust-Scientific-Computing/developers"    
