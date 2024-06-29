@@ -2,7 +2,7 @@
 name = "feotensor"
 version = "0.1.0"
 edition = "2021"
-description = "A Scientific Rust library for tensor operations"
+description = "A tensor library for scientific computing in Rust"
 license = "MIT"
 license-file = "LICENSE"
 homepage = "https://github.com/Rust-Scientific-Computing/feotensor"
