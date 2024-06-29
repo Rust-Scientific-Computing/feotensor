@@ -23,13 +23,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install extra plugins
-        run: npm install -g conventional-changelog-conventionalcommits
-
       - name: Semantic Release
         id: semantic-release
         uses: cycjimmy/semantic-release-action@v4
