@@ -22,18 +22,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install extra plugins
+        run: npm install -g conventional-changelog-conventionalcommits
+
       - name: Semantic Release
         id: semantic-release
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          extra_plugins: |
-            - @semantic-release/release-notes-generator
-            - @semantic-release/changelog
-            - @semantic-release/github
-            - conventional-changelog-conventionalcommits
 
     outputs:
       new_release_published: ${{ steps.semantic-release.outputs.new_release_published }}
