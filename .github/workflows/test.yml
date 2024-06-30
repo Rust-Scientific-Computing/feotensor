@@ -19,3 +19,6 @@ jobs:
 
       - name: Rust Test
         run: cargo test --all-features
+
+      - name: Rust Bench
+        run: cargo bench --all-features

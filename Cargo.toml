@@ -10,3 +10,10 @@ repository = "https://github.com/Rust-Scientific-Computing/feotensor"
 [dependencies]
 itertools = "0.13.0"
 num = "0.4.3"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "tensor_bench"
+harness = false
