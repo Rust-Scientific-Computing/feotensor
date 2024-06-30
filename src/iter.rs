@@ -1,6 +1,7 @@
 use crate::coord;
 use crate::coordinate::Coordinate;
 use crate::shape::Shape;
+use std::cmp::max;
 
 pub struct IndexIterator {
     shape: Shape,
@@ -10,7 +11,8 @@ pub struct IndexIterator {
 
 impl IndexIterator {
     pub fn new(shape: &Shape) -> Self {
-        let current = coord![0; shape.order()];
+        // (shape.order() == 0) => `next` returns None before `current` is used
+        let current = coord![0; max(shape.order(), 1)].unwrap();
         IndexIterator {
             shape: shape.clone(),
             current,
@@ -55,12 +57,12 @@ mod tests {
         let shape = shape![2, 3].unwrap();
         let mut iter = IndexIterator::new(&shape);
 
-        assert_eq!(iter.next(), Some(coord![0, 0]));
-        assert_eq!(iter.next(), Some(coord![0, 1]));
-        assert_eq!(iter.next(), Some(coord![0, 2]));
-        assert_eq!(iter.next(), Some(coord![1, 0]));
-        assert_eq!(iter.next(), Some(coord![1, 1]));
-        assert_eq!(iter.next(), Some(coord![1, 2]));
+        assert_eq!(iter.next(), Some(coord![0, 0].unwrap()));
+        assert_eq!(iter.next(), Some(coord![0, 1].unwrap()));
+        assert_eq!(iter.next(), Some(coord![0, 2].unwrap()));
+        assert_eq!(iter.next(), Some(coord![1, 0].unwrap()));
+        assert_eq!(iter.next(), Some(coord![1, 1].unwrap()));
+        assert_eq!(iter.next(), Some(coord![1, 2].unwrap()));
         assert_eq!(iter.next(), None);
     }
 
@@ -69,10 +71,10 @@ mod tests {
         let shape = shape![4].unwrap();
         let mut iter = IndexIterator::new(&shape);
 
-        assert_eq!(iter.next(), Some(coord![0]));
-        assert_eq!(iter.next(), Some(coord![1]));
-        assert_eq!(iter.next(), Some(coord![2]));
-        assert_eq!(iter.next(), Some(coord![3]));
+        assert_eq!(iter.next(), Some(coord![0].unwrap()));
+        assert_eq!(iter.next(), Some(coord![1].unwrap()));
+        assert_eq!(iter.next(), Some(coord![2].unwrap()));
+        assert_eq!(iter.next(), Some(coord![3].unwrap()));
         assert_eq!(iter.next(), None);
     }
 

@@ -36,7 +36,7 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
     pub fn eye(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
         let mut result = DynamicMatrix::zeros(shape).unwrap();
         for i in 0..shape[0] {
-            result.set(&coord![i, i], T::one()).unwrap();
+            result.set(&coord![i, i].unwrap(), T::one()).unwrap();
         }
         Ok(result)
     }
@@ -81,9 +81,9 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
             for j in 0..rhs.shape()[1] {
                 let mut sum = T::zero();
                 for k in 0..self.shape()[1] {
-                    sum = sum + self[coord![i, k]] * rhs[coord![k, j]];
+                    sum = sum + self[coord![i, k].unwrap()] * rhs[coord![k, j].unwrap()];
                 }
-                result.set(&coord![i, j], sum).unwrap();
+                result.set(&coord![i, j].unwrap(), sum).unwrap();
             }
         }
         DynamicMatrix::from_tensor(result).unwrap()
@@ -95,9 +95,9 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
         for i in 0..self.shape()[0] {
             let mut sum = T::zero();
             for j in 0..self.shape()[1] {
-                sum = sum + self[coord![i, j]] * rhs[j];
+                sum = sum + self[coord![i, j].unwrap()] * rhs[j];
             }
-            result.set(&coord![i], sum).unwrap();
+            result.set(&coord![i].unwrap(), sum).unwrap();
         }
         DynamicVector::from_tensor(result).unwrap()
     }
@@ -251,10 +251,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 1.0);
-        assert_eq!(matrix[coord![0, 1]], 2.0);
-        assert_eq!(matrix[coord![1, 0]], 3.0);
-        assert_eq!(matrix[coord![1, 1]], 4.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 3.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 4.0);
     }
 
     #[test]
@@ -264,10 +264,10 @@ mod tests {
         let tensor = DynamicTensor::new(&shape, &data).unwrap();
         let matrix = DynamicMatrix::from_tensor(tensor).unwrap();
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 1.0);
-        assert_eq!(matrix[coord![0, 1]], 2.0);
-        assert_eq!(matrix[coord![1, 0]], 3.0);
-        assert_eq!(matrix[coord![1, 1]], 4.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 3.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 4.0);
     }
 
     #[test]
@@ -284,10 +284,10 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let matrix = DynamicMatrix::fill(&shape, 3.0).unwrap();
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 3.0);
-        assert_eq!(matrix[coord![0, 1]], 3.0);
-        assert_eq!(matrix[coord![1, 0]], 3.0);
-        assert_eq!(matrix[coord![1, 1]], 3.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 3.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 3.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 3.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 3.0);
     }
 
     #[test]
@@ -295,15 +295,15 @@ mod tests {
         let shape = shape![3, 3].unwrap();
         let matrix = DynamicMatrix::<f64>::eye(&shape).unwrap();
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 1.0);
-        assert_eq!(matrix[coord![0, 1]], 0.0);
-        assert_eq!(matrix[coord![0, 2]], 0.0);
-        assert_eq!(matrix[coord![1, 0]], 0.0);
-        assert_eq!(matrix[coord![1, 1]], 1.0);
-        assert_eq!(matrix[coord![1, 2]], 0.0);
-        assert_eq!(matrix[coord![2, 0]], 0.0);
-        assert_eq!(matrix[coord![2, 1]], 0.0);
-        assert_eq!(matrix[coord![2, 2]], 1.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 0.0);
+        assert_eq!(matrix[coord![0, 2].unwrap()], 0.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 0.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 1.0);
+        assert_eq!(matrix[coord![1, 2].unwrap()], 0.0);
+        assert_eq!(matrix[coord![2, 0].unwrap()], 0.0);
+        assert_eq!(matrix[coord![2, 1].unwrap()], 0.0);
+        assert_eq!(matrix[coord![2, 2].unwrap()], 1.0);
     }
 
     #[test]
@@ -311,10 +311,10 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let matrix = DynamicMatrix::<f64>::zeros(&shape).unwrap();
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 0.0);
-        assert_eq!(matrix[coord![0, 1]], 0.0);
-        assert_eq!(matrix[coord![1, 0]], 0.0);
-        assert_eq!(matrix[coord![1, 1]], 0.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 0.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 0.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 0.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 0.0);
     }
 
     #[test]
@@ -322,10 +322,10 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let matrix = DynamicMatrix::<f64>::ones(&shape).unwrap();
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 1.0);
-        assert_eq!(matrix[coord![0, 1]], 1.0);
-        assert_eq!(matrix[coord![1, 0]], 1.0);
-        assert_eq!(matrix[coord![1, 1]], 1.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 1.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 1.0);
     }
 
     #[test]
@@ -340,7 +340,7 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
-        assert_eq!(matrix[coord![1, 0]], 3.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 3.0);
     }
 
     #[test]
@@ -348,12 +348,12 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut matrix = DynamicMatrix::new(&shape, &data).unwrap();
-        matrix[coord![1, 0]] = 5.0;
+        matrix[coord![1, 0].unwrap()] = 5.0;
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 1.0);
-        assert_eq!(matrix[coord![0, 1]], 2.0);
-        assert_eq!(matrix[coord![1, 0]], 5.0);
-        assert_eq!(matrix[coord![1, 1]], 4.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 5.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 4.0);
     }
 
     #[test]
@@ -361,12 +361,12 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut matrix = DynamicMatrix::new(&shape, &data).unwrap();
-        matrix.set(&coord![1, 0], 5.0).unwrap();
+        matrix.set(&coord![1, 0].unwrap(), 5.0).unwrap();
         assert_eq!(matrix.shape(), &shape);
-        assert_eq!(matrix[coord![0, 0]], 1.0);
-        assert_eq!(matrix[coord![0, 1]], 2.0);
-        assert_eq!(matrix[coord![1, 0]], 5.0);
-        assert_eq!(matrix[coord![1, 1]], 4.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 5.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 4.0);
     }
 
     #[test]
@@ -428,10 +428,10 @@ mod tests {
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1.matmul(&matrix2);
         assert_eq!(result.shape(), &shape);
-        assert_eq!(result[coord![0, 0]], 10.0);
-        assert_eq!(result[coord![0, 1]], 13.0);
-        assert_eq!(result[coord![1, 0]], 22.0);
-        assert_eq!(result[coord![1, 1]], 29.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 10.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 13.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 22.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 29.0);
     }
 
     #[test]
@@ -453,10 +453,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix + 2.0;
-        assert_eq!(result[coord![0, 0]], 3.0);
-        assert_eq!(result[coord![0, 1]], 4.0);
-        assert_eq!(result[coord![1, 0]], 5.0);
-        assert_eq!(result[coord![1, 1]], 6.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 3.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 4.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 5.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 6.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -468,10 +468,10 @@ mod tests {
         let matrix1 = DynamicMatrix::new(&shape, &data1).unwrap();
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1 + matrix2;
-        assert_eq!(result[coord![0, 0]], 3.0);
-        assert_eq!(result[coord![0, 1]], 5.0);
-        assert_eq!(result[coord![1, 0]], 7.0);
-        assert_eq!(result[coord![1, 1]], 9.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 3.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 5.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 7.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 9.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -483,10 +483,10 @@ mod tests {
         let matrix = DynamicMatrix::new(&shape, &data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = matrix + tensor;
-        assert_eq!(result[coord![0, 0]], 3.0);
-        assert_eq!(result[coord![0, 1]], 5.0);
-        assert_eq!(result[coord![1, 0]], 7.0);
-        assert_eq!(result[coord![1, 1]], 9.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 3.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 5.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 7.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 9.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -496,10 +496,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix - 2.0;
-        assert_eq!(result[coord![0, 0]], -1.0);
-        assert_eq!(result[coord![0, 1]], 0.0);
-        assert_eq!(result[coord![1, 0]], 1.0);
-        assert_eq!(result[coord![1, 1]], 2.0);
+        assert_eq!(result[coord![0, 0].unwrap()], -1.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 0.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 1.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 2.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -511,10 +511,10 @@ mod tests {
         let matrix1 = DynamicMatrix::new(&shape, &data1).unwrap();
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1 - matrix2;
-        assert_eq!(result[coord![0, 0]], -1.0);
-        assert_eq!(result[coord![0, 1]], -1.0);
-        assert_eq!(result[coord![1, 0]], -1.0);
-        assert_eq!(result[coord![1, 1]], -1.0);
+        assert_eq!(result[coord![0, 0].unwrap()], -1.0);
+        assert_eq!(result[coord![0, 1].unwrap()], -1.0);
+        assert_eq!(result[coord![1, 0].unwrap()], -1.0);
+        assert_eq!(result[coord![1, 1].unwrap()], -1.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -526,10 +526,10 @@ mod tests {
         let matrix = DynamicMatrix::new(&shape, &data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = matrix - tensor;
-        assert_eq!(result[coord![0, 0]], -1.0);
-        assert_eq!(result[coord![0, 1]], -1.0);
-        assert_eq!(result[coord![1, 0]], -1.0);
-        assert_eq!(result[coord![1, 1]], -1.0);
+        assert_eq!(result[coord![0, 0].unwrap()], -1.0);
+        assert_eq!(result[coord![0, 1].unwrap()], -1.0);
+        assert_eq!(result[coord![1, 0].unwrap()], -1.0);
+        assert_eq!(result[coord![1, 1].unwrap()], -1.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -539,10 +539,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix * 2.0;
-        assert_eq!(result[coord![0, 0]], 2.0);
-        assert_eq!(result[coord![0, 1]], 4.0);
-        assert_eq!(result[coord![1, 0]], 6.0);
-        assert_eq!(result[coord![1, 1]], 8.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 4.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 6.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 8.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -554,10 +554,10 @@ mod tests {
         let matrix1 = DynamicMatrix::new(&shape, &data1).unwrap();
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1 * matrix2;
-        assert_eq!(result[coord![0, 0]], 2.0);
-        assert_eq!(result[coord![0, 1]], 6.0);
-        assert_eq!(result[coord![1, 0]], 12.0);
-        assert_eq!(result[coord![1, 1]], 20.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 6.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 12.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 20.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -569,10 +569,10 @@ mod tests {
         let matrix = DynamicMatrix::new(&shape, &data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = matrix * tensor;
-        assert_eq!(result[coord![0, 0]], 2.0);
-        assert_eq!(result[coord![0, 1]], 6.0);
-        assert_eq!(result[coord![1, 0]], 12.0);
-        assert_eq!(result[coord![1, 1]], 20.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 6.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 12.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 20.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -582,10 +582,10 @@ mod tests {
         let data = vec![4.0, 6.0, 8.0, 10.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix / 2.0;
-        assert_eq!(result[coord![0, 0]], 2.0);
-        assert_eq!(result[coord![0, 1]], 3.0);
-        assert_eq!(result[coord![1, 0]], 4.0);
-        assert_eq!(result[coord![1, 1]], 5.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 3.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 4.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 5.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -597,10 +597,10 @@ mod tests {
         let matrix1 = DynamicMatrix::new(&shape, &data1).unwrap();
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1 / matrix2;
-        assert_eq!(result[coord![0, 0]], 2.0);
-        assert_eq!(result[coord![0, 1]], 2.0);
-        assert_eq!(result[coord![1, 0]], 2.0);
-        assert_eq!(result[coord![1, 1]], 2.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 2.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -612,10 +612,10 @@ mod tests {
         let matrix = DynamicMatrix::new(&shape, &data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = matrix / tensor;
-        assert_eq!(result[coord![0, 0]], 2.0);
-        assert_eq!(result[coord![0, 1]], 2.0);
-        assert_eq!(result[coord![1, 0]], 2.0);
-        assert_eq!(result[coord![1, 1]], 2.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 2.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 2.0);
         assert_eq!(result.shape(), &shape);
     }
 
@@ -624,10 +624,10 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
-        assert_eq!(matrix[coord![0, 0]], 1.0);
-        assert_eq!(matrix[coord![0, 1]], 2.0);
-        assert_eq!(matrix[coord![1, 0]], 3.0);
-        assert_eq!(matrix[coord![1, 1]], 4.0);
+        assert_eq!(matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 3.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 4.0);
     }
 
     #[test]
@@ -635,11 +635,11 @@ mod tests {
         let shape = shape![2, 2].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut matrix = DynamicMatrix::new(&shape, &data).unwrap();
-        matrix[coord![0, 0]] = 5.0;
-        assert_eq!(matrix[coord![0, 0]], 5.0);
-        assert_eq!(matrix[coord![0, 1]], 2.0);
-        assert_eq!(matrix[coord![1, 0]], 3.0);
-        assert_eq!(matrix[coord![1, 1]], 4.0);
+        matrix[coord![0, 0].unwrap()] = 5.0;
+        assert_eq!(matrix[coord![0, 0].unwrap()], 5.0);
+        assert_eq!(matrix[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(matrix[coord![1, 0].unwrap()], 3.0);
+        assert_eq!(matrix[coord![1, 1].unwrap()], 4.0);
     }
 
     #[test]
@@ -648,10 +648,10 @@ mod tests {
         let data = vec![2.0, 3.0, 4.0, 5.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix.pow(2.0);
-        assert_eq!(result[coord![0, 0]], 4.0);
-        assert_eq!(result[coord![0, 1]], 9.0);
-        assert_eq!(result[coord![1, 0]], 16.0);
-        assert_eq!(result[coord![1, 1]], 25.0);
+        assert_eq!(result[coord![0, 0].unwrap()], 4.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 9.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 16.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 25.0);
         assert_eq!(result.shape(), &shape);
     }
 }

@@ -1,14 +1,19 @@
 use std::fmt;
 use std::ops::{Index, IndexMut};
 
+use crate::error::ShapeError;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Coordinate {
     indices: Vec<usize>,
 }
 
 impl Coordinate {
-    pub fn new(indices: Vec<usize>) -> Self {
-        Self { indices }
+    pub fn new(indices: Vec<usize>) -> Result<Self, ShapeError> {
+        if indices.is_empty() {
+            return Err(ShapeError::new("Coordinate cannot be empty"));
+        }
+        Ok(Self { indices })
     }
 
     pub fn len(&self) -> usize {
@@ -73,13 +78,13 @@ mod tests {
 
     #[test]
     fn test_len() {
-        let coord = coord![1, 2, 3];
+        let coord = coord![1, 2, 3].unwrap();
         assert_eq!(coord.len(), 3);
     }
 
     #[test]
     fn test_iter() {
-        let coord = coord![1, 2, 3];
+        let coord = coord![1, 2, 3].unwrap();
         let mut iter = coord.iter();
         assert_eq!(iter.next(), Some(&1));
         assert_eq!(iter.next(), Some(&2));
@@ -89,14 +94,14 @@ mod tests {
 
     #[test]
     fn test_insert() {
-        let coord = coord![1, 2, 3];
+        let coord = coord![1, 2, 3].unwrap();
         let new_coord = coord.insert(1, 4);
-        assert_eq!(new_coord, coord![1, 4, 2, 3]);
+        assert_eq!(new_coord, coord![1, 4, 2, 3].unwrap());
     }
 
     #[test]
     fn test_index() {
-        let coord = coord![1, 2, 3];
+        let coord = coord![1, 2, 3].unwrap();
         assert_eq!(coord[0], 1);
         assert_eq!(coord[1], 2);
         assert_eq!(coord[2], 3);
@@ -104,23 +109,23 @@ mod tests {
 
     #[test]
     fn test_index_mut() {
-        let mut coord = coord![1, 2, 3];
+        let mut coord = coord![1, 2, 3].unwrap();
         coord[1] = 4;
         assert_eq!(coord[1], 4);
     }
 
     #[test]
     fn test_display() {
-        let coord = coord![1, 2, 3];
+        let coord = coord![1, 2, 3].unwrap();
         assert_eq!(format!("{}", coord), "(1, 2, 3)");
     }
 
     #[test]
     fn test_coord_macro() {
-        let coord = coord![1, 2, 3];
-        assert_eq!(coord, Coordinate::new(vec![1, 2, 3]));
+        let coord = coord![1, 2, 3].unwrap();
+        assert_eq!(coord, Coordinate::new(vec![1, 2, 3]).unwrap());
 
-        let coord_repeated = coord![1; 3];
-        assert_eq!(coord_repeated, Coordinate::new(vec![1, 1, 1]));
+        let coord_repeated = coord![1; 3].unwrap();
+        assert_eq!(coord_repeated, Coordinate::new(vec![1, 1, 1]).unwrap());
     }
 }

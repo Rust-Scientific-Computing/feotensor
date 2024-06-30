@@ -83,9 +83,9 @@ impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
         for j in 0..rhs.shape()[1] {
             let mut sum = T::zero();
             for i in 0..self.shape()[0] {
-                sum = sum + self[i] * rhs[coord![i, j]];
+                sum = sum + self[i] * rhs[coord![i, j].unwrap()];
             }
-            result.set(&coord![j], sum).unwrap();
+            result.set(&coord![j].unwrap(), sum).unwrap();
         }
         DynamicVector::from_tensor(result).unwrap()
     }
@@ -219,13 +219,13 @@ impl<T: Num + Copy + PartialOrd> Index<usize> for DynamicVector<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.tensor.get(&coord![index]).unwrap()
+        &self.tensor.get(&coord![index].unwrap()).unwrap()
     }
 }
 
 impl<T: Num + Copy + PartialOrd> IndexMut<usize> for DynamicVector<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.tensor.get_mut(&coord![index]).unwrap()
+        self.tensor.get_mut(&coord![index].unwrap()).unwrap()
     }
 }
 
@@ -326,8 +326,8 @@ mod tests {
     fn test_set() {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut vector = DynamicVector::new(&data).unwrap();
-        vector.set(&coord![2], 5.0).unwrap();
-        assert_eq!(*vector.get(&coord![2]).unwrap(), 5.0);
+        vector.set(&coord![2].unwrap(), 5.0).unwrap();
+        assert_eq!(*vector.get(&coord![2].unwrap()).unwrap(), 5.0);
     }
 
     #[test]
@@ -415,8 +415,8 @@ mod tests {
         assert_eq!(result.shape(), &expected_shape);
         for i in 0..result.shape()[0] {
             for j in 0..result.shape()[1] {
-                let x = result.get(&coord![i, j]).unwrap();
-                let y = expected_tensor.get(&coord![i, j]).unwrap();
+                let x = result.get(&coord![i, j].unwrap()).unwrap();
+                let y = expected_tensor.get(&coord![i, j].unwrap()).unwrap();
                 assert_eq!(*x, *y);
             }
         }
