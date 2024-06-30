@@ -231,7 +231,7 @@ impl<T: Num + Copy + PartialOrd> Index<Coordinate> for DynamicMatrix<T> {
     type Output = T;
 
     fn index(&self, index: Coordinate) -> &Self::Output {
-        &self.tensor.get(&index).unwrap()
+        self.tensor.get(&index).unwrap()
     }
 }
 

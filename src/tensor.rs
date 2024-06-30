@@ -81,7 +81,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
-        if axes.is_empty() | (remaining_dims.len() == 0) {
+        if axes.is_empty() | remaining_dims.is_empty() {
             let sum: T = self.data.iter().fold(T::zero(), |acc, x| acc + *x);
             return Tensor::new(&shape![1].unwrap(), &[sum]).unwrap();
         }
@@ -100,7 +100,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
                 }
 
                 let value = *t.get(&target).unwrap() + *self.get(&indices).unwrap();
-                let _ = t.set(&target, value).unwrap();
+                t.set(&target, value).unwrap();
             }
         }
 
@@ -119,7 +119,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
                 result
             })
             .collect();
-        let n = if removing_dims_t.len() != 0 {
+        let n = if !removing_dims_t.is_empty() {
             removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x)
         } else {
             let mut sum = T::zero();
@@ -144,7 +144,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
             })
             .collect();
 
-        let n = if removing_dims_t.len() != 0 {
+        let n = if !removing_dims_t.is_empty() {
             removing_dims_t.iter().fold(T::one(), |acc, x| acc * *x)
         } else {
             let mut sum = T::zero();
@@ -167,7 +167,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
-        if axes.is_empty() | (remaining_dims.len() == 0) {
+        if axes.is_empty() | remaining_dims.is_empty() {
             let avg: T = self.data.iter().fold(T::zero(), |acc, x| acc + *x) / n;
             let var: T = self
                 .data
@@ -195,7 +195,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
                 let centered = *self.get(&indices).unwrap() - *mean.get(&target).unwrap();
                 let value = *t.get(&target).unwrap() + centered * centered;
-                let _ = t.set(&target, value).unwrap();
+                t.set(&target, value).unwrap();
             }
         }
 
@@ -216,7 +216,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
-        if axes.is_empty() | (remaining_dims.len() == 0) {
+        if axes.is_empty() | remaining_dims.is_empty() {
             let min: T = self
                 .data
                 .iter()
@@ -268,7 +268,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         let removing_dims = axes.iter().map(|&i| self.shape[i]).collect::<Vec<_>>();
 
         // We resolve to a scalar value
-        if axes.is_empty() | (remaining_dims.len() == 0) {
+        if axes.is_empty() | remaining_dims.is_empty() {
             let max: T = self
                 .data
                 .iter()
@@ -326,7 +326,7 @@ impl<T: Float + PartialOrd + Copy> Tensor<T> {
     pub fn pow(&self, power: T) -> Tensor<T> {
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone().powf(power);
+            result.data[i] = self.data[i].powf(power);
         }
         result
     }
@@ -339,7 +339,7 @@ impl<T: Num + PartialOrd + Copy> Mul<T> for Tensor<T> {
     fn mul(self, rhs: T) -> Tensor<T> {
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() * rhs;
+            result.data[i] = self.data[i] * rhs;
         }
         result
     }
@@ -352,7 +352,7 @@ impl<T: Num + PartialOrd + Copy> Add<T> for Tensor<T> {
     fn add(self, rhs: T) -> Tensor<T> {
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() + rhs;
+            result.data[i] = self.data[i] + rhs;
         }
         result
     }
@@ -366,7 +366,7 @@ impl<T: Num + PartialOrd + Copy> Add<Tensor<T>> for Tensor<T> {
         assert!(self.shape == rhs.shape);
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() + rhs.data[i].clone();
+            result.data[i] = self.data[i] + rhs.data[i];
         }
         result
     }
@@ -395,7 +395,7 @@ impl<T: Num + PartialOrd + Copy> Sub<T> for Tensor<T> {
     fn sub(self, rhs: T) -> Tensor<T> {
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() - rhs;
+            result.data[i] = self.data[i] - rhs;
         }
         result
     }
@@ -409,7 +409,7 @@ impl<T: Num + PartialOrd + Copy> Sub<Tensor<T>> for Tensor<T> {
         assert!(self.shape == rhs.shape);
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() - rhs.data[i].clone();
+            result.data[i] = self.data[i] - rhs.data[i];
         }
         result
     }
@@ -439,7 +439,7 @@ impl<T: Num + PartialOrd + Copy> Mul<Tensor<T>> for Tensor<T> {
         assert!(self.shape == rhs.shape);
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() * rhs.data[i].clone();
+            result.data[i] = self.data[i] * rhs.data[i];
         }
         result
     }
@@ -468,7 +468,7 @@ impl<T: Num + PartialOrd + Copy> Div<T> for Tensor<T> {
     fn div(self, rhs: T) -> Tensor<T> {
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() / rhs;
+            result.data[i] = self.data[i] / rhs;
         }
         result
     }
@@ -482,7 +482,7 @@ impl<T: Num + PartialOrd + Copy> Div<Tensor<T>> for Tensor<T> {
         assert!(self.shape == rhs.shape);
         let mut result = Tensor::zeros(&self.shape);
         for i in 0..self.size() {
-            result.data[i] = self.data[i].clone() / rhs.data[i].clone();
+            result.data[i] = self.data[i] / rhs.data[i];
         }
         result
     }

@@ -219,7 +219,7 @@ impl<T: Num + Copy + PartialOrd> Index<usize> for DynamicVector<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.tensor.get(&coord![index].unwrap()).unwrap()
+        self.tensor.get(&coord![index].unwrap()).unwrap()
     }
 }
 
