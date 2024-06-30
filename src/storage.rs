@@ -16,8 +16,8 @@ impl<T> DynamicStorage<T> {
 
     /// For the row-wise maths see: https://bit.ly/3KQjPa3
     pub fn flatten(&self, coord: &Coordinate, shape: &Shape) -> Result<usize, ShapeError> {
-        if coord.len() != shape.order() {
-            let msg = format!("incorrect order ({} vs {}).", coord.len(), shape.order());
+        if coord.order() != shape.order() {
+            let msg = format!("incorrect order ({} vs {}).", coord.order(), shape.order());
             return Err(ShapeError::new(msg.as_str()));
         }
 

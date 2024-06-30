@@ -16,7 +16,7 @@ impl Coordinate {
         Ok(Self { indices })
     }
 
-    pub fn len(&self) -> usize {
+    pub fn order(&self) -> usize {
         self.indices.len()
     }
 
@@ -77,9 +77,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_len() {
+    fn test_order() {
         let coord = coord![1, 2, 3].unwrap();
-        assert_eq!(coord.len(), 3);
+        assert_eq!(coord.order(), 3);
     }
 
     #[test]
