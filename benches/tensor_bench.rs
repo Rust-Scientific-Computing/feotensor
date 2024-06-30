@@ -66,7 +66,6 @@ fn bench_vecmul(c: &mut Criterion) {
     });
 }
 
-
 criterion_group!(
     benches,
     bench_sum,
