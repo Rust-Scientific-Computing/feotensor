@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 description = "A tensor library for scientific computing in Rust"
 license = "MIT"
-license-file = "LICENSE"
 homepage = "https://github.com/Rust-Scientific-Computing/feotensor"
 repository = "https://github.com/Rust-Scientific-Computing/feotensor"
 
 [dependencies]
+itertools = "0.13.0"
+num = "0.4.3"

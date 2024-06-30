@@ -1,14 +1,9 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod axes;
+pub mod coordinate;
+pub mod error;
+pub mod iter;
+pub mod matrix;
+pub mod shape;
+pub mod storage;
+pub mod tensor;
+pub mod vector;
