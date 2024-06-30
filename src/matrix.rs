@@ -1,14 +1,14 @@
-use std::ops::{Add, Sub, Mul, Div, Deref, Index, IndexMut, DerefMut};
+use std::ops::{Add, Deref, DerefMut, Div, Index, IndexMut, Mul, Sub};
 
-use num::{Num, Float};
+use crate::axes::Axes;
+use crate::coord;
+use crate::coordinate::Coordinate;
 use crate::error::ShapeError;
 use crate::shape;
-use crate::coord;
 use crate::shape::Shape;
 use crate::tensor::DynamicTensor;
 use crate::vector::DynamicVector;
-use crate::axes::Axes;
-use crate::coordinate::Coordinate;
+use num::{Float, Num};
 
 pub struct DynamicMatrix<T: Num> {
     tensor: DynamicTensor<T>,
@@ -17,9 +17,11 @@ pub type Matrix<T> = DynamicMatrix<T>;
 
 impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
     pub fn new(shape: &Shape, data: &[T]) -> Result<DynamicMatrix<T>, ShapeError> {
-        Ok(DynamicMatrix { tensor: DynamicTensor::new(shape, data)? })
+        Ok(DynamicMatrix {
+            tensor: DynamicTensor::new(shape, data)?,
+        })
     }
-    
+
     pub fn from_tensor(tensor: DynamicTensor<T>) -> Result<DynamicMatrix<T>, ShapeError> {
         if tensor.shape().order() != 2 {
             return Err(ShapeError::new("Shape must have order of 2"));
@@ -38,8 +40,12 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
         }
         Ok(result)
     }
-    pub fn zeros(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> { Self::fill(shape, T::zero()) }
-    pub fn ones(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> { Self::fill(shape, T::one()) }
+    pub fn zeros(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
+        Self::fill(shape, T::zero())
+    }
+    pub fn ones(shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
+        Self::fill(shape, T::one())
+    }
 
     pub fn sum(&self, axes: Axes) -> DynamicVector<T> {
         let result = self.tensor.sum(axes);
@@ -597,7 +603,7 @@ mod tests {
         assert_eq!(result[coord![1, 1]], 2.0);
         assert_eq!(result.shape(), &shape);
     }
-    
+
     #[test]
     fn test_div_matrix_tensor() {
         let shape = shape![2, 2].unwrap();

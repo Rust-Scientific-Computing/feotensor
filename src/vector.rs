@@ -1,13 +1,13 @@
-use std::ops::{Add, Sub, Mul, Div, Deref, Index, IndexMut, DerefMut};
+use std::ops::{Add, Deref, DerefMut, Div, Index, IndexMut, Mul, Sub};
 
-use num::Num;
-use num::Float;
-use crate::error::ShapeError;
-use crate::shape;
 use crate::coord;
+use crate::error::ShapeError;
+use crate::matrix::DynamicMatrix;
+use crate::shape;
 use crate::shape::Shape;
 use crate::tensor::DynamicTensor;
-use crate::matrix::DynamicMatrix;
+use num::Float;
+use num::Num;
 
 pub struct DynamicVector<T: Num> {
     tensor: DynamicTensor<T>,
@@ -16,9 +16,11 @@ pub type Vector<T> = DynamicVector<T>;
 
 impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
     pub fn new(data: &[T]) -> Result<DynamicVector<T>, ShapeError> {
-        Ok(DynamicVector { tensor: DynamicTensor::new(&shape![data.len()].unwrap(), data)? })
+        Ok(DynamicVector {
+            tensor: DynamicTensor::new(&shape![data.len()].unwrap(), data)?,
+        })
     }
-    
+
     pub fn from_tensor(tensor: DynamicTensor<T>) -> Result<DynamicVector<T>, ShapeError> {
         if tensor.shape().order() != 1 {
             return Err(ShapeError::new("Shape must have order of 1"));
@@ -33,8 +35,12 @@ impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
         let data = vec![value; shape[0]];
         DynamicVector::new(&data)
     }
-    pub fn zeros(shape: &Shape) -> Result<DynamicVector<T>, ShapeError> { Self::fill(shape, T::zero()) }
-    pub fn ones(shape: &Shape) -> Result<DynamicVector<T>, ShapeError> { Self::fill(shape, T::one()) }
+    pub fn zeros(shape: &Shape) -> Result<DynamicVector<T>, ShapeError> {
+        Self::fill(shape, T::zero())
+    }
+    pub fn ones(shape: &Shape) -> Result<DynamicVector<T>, ShapeError> {
+        Self::fill(shape, T::one())
+    }
 
     pub fn sum(&self) -> DynamicVector<T> {
         let result = self.tensor.sum(vec![]);
@@ -383,10 +389,7 @@ mod tests {
     #[test]
     fn test_matmul() {
         let data_vector = vec![1.0, 2.0];
-        let data_matrix = vec![
-            1.0, 2.0,
-            3.0, 4.0
-        ];
+        let data_matrix = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data_vector).unwrap();
         let matrix = DynamicMatrix::new(&shape![2, 2].unwrap(), &data_matrix).unwrap();
         let result = vector.matmul(&matrix);
@@ -404,10 +407,7 @@ mod tests {
         let result = vector1.prod(&vector2);
 
         let expected_data = vec![
-            2.0,  3.0,  4.0,  5.0,
-            4.0,  6.0,  8.0, 10.0,
-            6.0,  9.0, 12.0, 15.0,
-            8.0, 12.0, 16.0, 20.0
+            2.0, 3.0, 4.0, 5.0, 4.0, 6.0, 8.0, 10.0, 6.0, 9.0, 12.0, 15.0, 8.0, 12.0, 16.0, 20.0,
         ];
         let expected_shape = shape![4, 4].unwrap();
         let expected_tensor = DynamicTensor::new(&expected_shape, &expected_data).unwrap();
@@ -577,7 +577,7 @@ mod tests {
         assert_eq!(result[3], 2.0);
         assert_eq!(result.shape(), &shape);
     }
-    
+
     #[test]
     fn test_div_vector_tensor() {
         let shape = shape![4].unwrap();

@@ -1,8 +1,8 @@
 use std::ops::{Index, IndexMut};
 
 use crate::coordinate::Coordinate;
-use crate::shape::Shape;
 use crate::error::ShapeError;
+use crate::shape::Shape;
 
 #[derive(Debug, PartialEq)]
 pub struct DynamicStorage<T> {
@@ -23,13 +23,15 @@ impl<T> DynamicStorage<T> {
 
         for (i, &dim) in coord.iter().enumerate() {
             if dim >= shape[i] {
-                return Err(ShapeError::new(format!("out of bounds for dimension {}", i).as_str()));
+                return Err(ShapeError::new(
+                    format!("out of bounds for dimension {}", i).as_str(),
+                ));
             }
         }
 
         let mut index = 0;
         for k in 0..shape.order() {
-            let stride = shape[k+1..].iter().product::<usize>();
+            let stride = shape[k + 1..].iter().product::<usize>();
             index += coord[k] * stride;
         }
         Ok(index)
@@ -54,7 +56,6 @@ impl<T> Index<usize> for DynamicStorage<T> {
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
     }
-
 }
 
 impl<T> Index<std::ops::Range<usize>> for DynamicStorage<T> {

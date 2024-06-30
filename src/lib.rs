@@ -1,9 +1,9 @@
-pub mod shape;
-pub mod iter;
-pub mod error;
+pub mod axes;
 pub mod coordinate;
+pub mod error;
+pub mod iter;
+pub mod matrix;
+pub mod shape;
 pub mod storage;
 pub mod tensor;
 pub mod vector;
-pub mod matrix;
-pub mod axes;

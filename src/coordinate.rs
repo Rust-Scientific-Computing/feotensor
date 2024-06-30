@@ -22,7 +22,9 @@ impl Coordinate {
     pub fn insert(&self, index: usize, axis: usize) -> Self {
         let mut new_indices = self.indices.clone();
         new_indices.insert(index, axis);
-        Self { indices: new_indices }
+        Self {
+            indices: new_indices,
+        }
     }
 }
 

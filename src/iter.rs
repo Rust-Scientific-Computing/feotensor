@@ -45,7 +45,6 @@ impl Iterator for IndexIterator {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
