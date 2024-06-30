@@ -287,7 +287,10 @@ mod tests {
     fn test_eye() {
         let shape = shape![3, 3].unwrap();
         let matrix = DynamicMatrix::<f64>::eye(&shape).unwrap();
-        assert_eq!(matrix, DynamicMatrix::new(&shape, &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]).unwrap());
+        assert_eq!(
+            matrix,
+            DynamicMatrix::new(&shape, &[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]).unwrap()
+        );
     }
 
     #[test]
@@ -325,7 +328,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut matrix = DynamicMatrix::new(&shape, &data).unwrap();
         matrix[coord![1, 0].unwrap()] = 5.0;
-        assert_eq!(matrix, DynamicMatrix::new(&shape, &[1.0, 2.0, 5.0, 4.0]).unwrap());
+        assert_eq!(
+            matrix,
+            DynamicMatrix::new(&shape, &[1.0, 2.0, 5.0, 4.0]).unwrap()
+        );
     }
 
     #[test]
@@ -334,7 +340,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut matrix = DynamicMatrix::new(&shape, &data).unwrap();
         matrix.set(&coord![1, 0].unwrap(), 5.0).unwrap();
-        assert_eq!(matrix, DynamicMatrix::new(&shape, &[1.0, 2.0, 5.0, 4.0]).unwrap());
+        assert_eq!(
+            matrix,
+            DynamicMatrix::new(&shape, &[1.0, 2.0, 5.0, 4.0]).unwrap()
+        );
     }
 
     #[test]
@@ -390,7 +399,10 @@ mod tests {
         let matrix1 = DynamicMatrix::new(&shape, &data1).unwrap();
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1.matmul(&matrix2);
-        assert_eq!(result, DynamicMatrix::new(&shape, &[10.0, 13.0, 22.0, 29.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[10.0, 13.0, 22.0, 29.0]).unwrap()
+        );
     }
 
     #[test]
@@ -410,7 +422,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix + 2.0;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[3.0, 4.0, 5.0, 6.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[3.0, 4.0, 5.0, 6.0]).unwrap()
+        );
     }
 
     #[test]
@@ -421,7 +436,10 @@ mod tests {
         let matrix1 = DynamicMatrix::new(&shape, &data1).unwrap();
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1 + matrix2;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[3.0, 5.0, 7.0, 9.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[3.0, 5.0, 7.0, 9.0]).unwrap()
+        );
     }
 
     #[test]
@@ -432,7 +450,10 @@ mod tests {
         let matrix = DynamicMatrix::new(&shape, &data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = matrix + tensor;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[3.0, 5.0, 7.0, 9.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[3.0, 5.0, 7.0, 9.0]).unwrap()
+        );
     }
 
     #[test]
@@ -441,7 +462,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix - 2.0;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[-1.0, 0.0, 1.0, 2.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[-1.0, 0.0, 1.0, 2.0]).unwrap()
+        );
     }
 
     #[test]
@@ -472,7 +496,10 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix * 2.0;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[2.0, 4.0, 6.0, 8.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[2.0, 4.0, 6.0, 8.0]).unwrap()
+        );
     }
 
     #[test]
@@ -483,7 +510,10 @@ mod tests {
         let matrix1 = DynamicMatrix::new(&shape, &data1).unwrap();
         let matrix2 = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = matrix1 * matrix2;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[2.0, 6.0, 12.0, 20.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[2.0, 6.0, 12.0, 20.0]).unwrap()
+        );
     }
 
     #[test]
@@ -494,7 +524,10 @@ mod tests {
         let matrix = DynamicMatrix::new(&shape, &data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = matrix * tensor;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[2.0, 6.0, 12.0, 20.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[2.0, 6.0, 12.0, 20.0]).unwrap()
+        );
     }
 
     #[test]
@@ -503,7 +536,10 @@ mod tests {
         let data = vec![4.0, 6.0, 8.0, 10.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let result = matrix / 2.0;
-        assert_eq!(result, DynamicMatrix::new(&shape, &[2.0, 3.0, 4.0, 5.0]).unwrap());
+        assert_eq!(
+            result,
+            DynamicMatrix::new(&shape, &[2.0, 3.0, 4.0, 5.0]).unwrap()
+        );
     }
 
     #[test]

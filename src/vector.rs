@@ -383,9 +383,14 @@ mod tests {
         let vector2 = DynamicVector::new(&data2).unwrap();
         let result = vector1.prod(&vector2);
 
-        let expected_tensor = DynamicTensor::new(&shape![4, 4].unwrap(), &[
-            2.0, 3.0, 4.0, 5.0, 4.0, 6.0, 8.0, 10.0, 6.0, 9.0, 12.0, 15.0, 8.0, 12.0, 16.0, 20.0,
-        ]).unwrap();
+        let expected_tensor = DynamicTensor::new(
+            &shape![4, 4].unwrap(),
+            &[
+                2.0, 3.0, 4.0, 5.0, 4.0, 6.0, 8.0, 10.0, 6.0, 9.0, 12.0, 15.0, 8.0, 12.0, 16.0,
+                20.0,
+            ],
+        )
+        .unwrap();
         assert_eq!(result, expected_tensor);
     }
 
