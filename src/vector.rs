@@ -9,6 +9,7 @@ use crate::tensor::DynamicTensor;
 use num::Float;
 use num::Num;
 
+#[derive(Debug, PartialEq)]
 pub struct DynamicVector<T: Num> {
     tensor: DynamicTensor<T>,
 }
@@ -251,11 +252,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = DynamicTensor::new(&shape, &data).unwrap();
         let vector = DynamicVector::from_tensor(tensor).unwrap();
-        assert_eq!(vector.shape(), &shape);
-        assert_eq!(vector[0], 1.0);
-        assert_eq!(vector[1], 2.0);
-        assert_eq!(vector[2], 3.0);
-        assert_eq!(vector[3], 4.0);
+        assert_eq!(vector, DynamicVector::new(&data).unwrap());
     }
 
     #[test]
@@ -271,33 +268,21 @@ mod tests {
     fn test_fill() {
         let shape = shape![4].unwrap();
         let vector = DynamicVector::fill(&shape, 3.0).unwrap();
-        assert_eq!(vector.shape(), &shape);
-        assert_eq!(vector[0], 3.0);
-        assert_eq!(vector[1], 3.0);
-        assert_eq!(vector[2], 3.0);
-        assert_eq!(vector[3], 3.0);
+        assert_eq!(vector, DynamicVector::new(&[3.0; 4]).unwrap());
     }
 
     #[test]
     fn test_zeros() {
         let shape = shape![4].unwrap();
         let vector = DynamicVector::<f64>::zeros(&shape).unwrap();
-        assert_eq!(vector.shape(), &shape);
-        assert_eq!(vector[0], 0.0);
-        assert_eq!(vector[1], 0.0);
-        assert_eq!(vector[2], 0.0);
-        assert_eq!(vector[3], 0.0);
+        assert_eq!(vector, DynamicVector::new(&[0.0; 4]).unwrap());
     }
 
     #[test]
     fn test_ones() {
         let shape = shape![4].unwrap();
         let vector = DynamicVector::<f64>::ones(&shape).unwrap();
-        assert_eq!(vector.shape(), &shape);
-        assert_eq!(vector[0], 1.0);
-        assert_eq!(vector[1], 1.0);
-        assert_eq!(vector[2], 1.0);
-        assert_eq!(vector[3], 1.0);
+        assert_eq!(vector, DynamicVector::new(&[1.0; 4]).unwrap());
     }
 
     #[test]
@@ -335,8 +320,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector.sum();
-        assert_eq!(result[0], 10.0);
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result, DynamicVector::new(&[10.0]).unwrap());
     }
 
     #[test]
@@ -344,8 +328,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector.mean();
-        assert_eq!(result[0], 2.5);
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result, DynamicVector::new(&[2.5]).unwrap());
     }
 
     #[test]
@@ -353,8 +336,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector.var();
-        assert_eq!(result[0], 1.25);
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result, DynamicVector::new(&[1.25]).unwrap());
     }
 
     #[test]
@@ -362,8 +344,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector.min();
-        assert_eq!(result[0], 1.0);
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result, DynamicVector::new(&[1.0]).unwrap());
     }
 
     #[test]
@@ -371,8 +352,7 @@ mod tests {
         let data = vec![-1.0, -2.0, -3.0, -4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector.max();
-        assert_eq!(result[0], -1.0);
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result, DynamicVector::new(&[-1.0]).unwrap());
     }
 
     #[test]
@@ -382,8 +362,7 @@ mod tests {
         let vector1 = DynamicVector::new(&data1).unwrap();
         let vector2 = DynamicVector::new(&data2).unwrap();
         let result = vector1.vecmul(&vector2);
-        assert_eq!(result[0], 40.0);
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result, DynamicVector::new(&[40.0]).unwrap());
     }
 
     #[test]
@@ -393,9 +372,7 @@ mod tests {
         let vector = DynamicVector::new(&data_vector).unwrap();
         let matrix = DynamicMatrix::new(&shape![2, 2].unwrap(), &data_matrix).unwrap();
         let result = vector.matmul(&matrix);
-        assert_eq!(result.shape(), &shape![2].unwrap());
-        assert_eq!(result[0], 7.0);
-        assert_eq!(result[1], 10.0);
+        assert_eq!(result, DynamicVector::new(&[7.0, 10.0]).unwrap());
     }
 
     #[test]
@@ -406,20 +383,15 @@ mod tests {
         let vector2 = DynamicVector::new(&data2).unwrap();
         let result = vector1.prod(&vector2);
 
-        let expected_data = vec![
-            2.0, 3.0, 4.0, 5.0, 4.0, 6.0, 8.0, 10.0, 6.0, 9.0, 12.0, 15.0, 8.0, 12.0, 16.0, 20.0,
-        ];
-        let expected_shape = shape![4, 4].unwrap();
-        let expected_tensor = DynamicTensor::new(&expected_shape, &expected_data).unwrap();
-
-        assert_eq!(result.shape(), &expected_shape);
-        for i in 0..result.shape()[0] {
-            for j in 0..result.shape()[1] {
-                let x = result.get(&coord![i, j].unwrap()).unwrap();
-                let y = expected_tensor.get(&coord![i, j].unwrap()).unwrap();
-                assert_eq!(*x, *y);
-            }
-        }
+        let expected_tensor = DynamicTensor::new(
+            &shape![4, 4].unwrap(),
+            &[
+                2.0, 3.0, 4.0, 5.0, 4.0, 6.0, 8.0, 10.0, 6.0, 9.0, 12.0, 15.0, 8.0, 12.0, 16.0,
+                20.0,
+            ],
+        )
+        .unwrap();
+        assert_eq!(result, expected_tensor);
     }
 
     #[test]
@@ -427,26 +399,17 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector + 2.0;
-        assert_eq!(result[0], 3.0);
-        assert_eq!(result[1], 4.0);
-        assert_eq!(result[2], 5.0);
-        assert_eq!(result[3], 6.0);
-        assert_eq!(result.shape(), &shape![4].unwrap());
+        assert_eq!(result, DynamicVector::new(&[3.0, 4.0, 5.0, 6.0]).unwrap());
     }
 
     #[test]
     fn test_add_vector() {
-        let shape = shape![4].unwrap();
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
         let vector1 = DynamicVector::new(&data1).unwrap();
         let vector2 = DynamicVector::new(&data2).unwrap();
         let result = vector1 + vector2;
-        assert_eq!(result[0], 3.0);
-        assert_eq!(result[1], 5.0);
-        assert_eq!(result[2], 7.0);
-        assert_eq!(result[3], 9.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[3.0, 5.0, 7.0, 9.0]).unwrap());
     }
 
     #[test]
@@ -457,39 +420,25 @@ mod tests {
         let vector = DynamicVector::new(&data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = vector + tensor;
-        assert_eq!(result[0], 3.0);
-        assert_eq!(result[1], 5.0);
-        assert_eq!(result[2], 7.0);
-        assert_eq!(result[3], 9.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[3.0, 5.0, 7.0, 9.0]).unwrap());
     }
 
     #[test]
     fn test_sub_scalar() {
-        let shape = shape![4].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector - 2.0;
-        assert_eq!(result[0], -1.0);
-        assert_eq!(result[1], 0.0);
-        assert_eq!(result[2], 1.0);
-        assert_eq!(result[3], 2.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[-1.0, 0.0, 1.0, 2.0]).unwrap());
     }
 
     #[test]
     fn test_sub_vector() {
-        let shape = shape![4].unwrap();
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
         let vector1 = DynamicVector::new(&data1).unwrap();
         let vector2 = DynamicVector::new(&data2).unwrap();
         let result = vector1 - vector2;
-        assert_eq!(result[0], -1.0);
-        assert_eq!(result[1], -1.0);
-        assert_eq!(result[2], -1.0);
-        assert_eq!(result[3], -1.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[-1.0; 4]).unwrap());
     }
 
     #[test]
@@ -500,39 +449,25 @@ mod tests {
         let vector = DynamicVector::new(&data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = vector - tensor;
-        assert_eq!(result[0], -1.0);
-        assert_eq!(result[1], -1.0);
-        assert_eq!(result[2], -1.0);
-        assert_eq!(result[3], -1.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[-1.0; 4]).unwrap());
     }
 
     #[test]
     fn test_mul_scalar() {
-        let shape = shape![4].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector * 2.0;
-        assert_eq!(result[0], 2.0);
-        assert_eq!(result[1], 4.0);
-        assert_eq!(result[2], 6.0);
-        assert_eq!(result[3], 8.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[2.0, 4.0, 6.0, 8.0]).unwrap());
     }
 
     #[test]
     fn test_mul_vector() {
-        let shape = shape![4].unwrap();
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
         let vector1 = DynamicVector::new(&data1).unwrap();
         let vector2 = DynamicVector::new(&data2).unwrap();
         let result = vector1 * vector2;
-        assert_eq!(result[0], 2.0);
-        assert_eq!(result[1], 6.0);
-        assert_eq!(result[2], 12.0);
-        assert_eq!(result[3], 20.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[2.0, 6.0, 12.0, 20.0]).unwrap());
     }
 
     #[test]
@@ -543,39 +478,25 @@ mod tests {
         let vector = DynamicVector::new(&data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = vector * tensor;
-        assert_eq!(result[0], 2.0);
-        assert_eq!(result[1], 6.0);
-        assert_eq!(result[2], 12.0);
-        assert_eq!(result[3], 20.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[2.0, 6.0, 12.0, 20.0]).unwrap());
     }
 
     #[test]
     fn test_div_scalar() {
-        let shape = shape![4].unwrap();
         let data = vec![4.0, 6.0, 8.0, 10.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector / 2.0;
-        assert_eq!(result[0], 2.0);
-        assert_eq!(result[1], 3.0);
-        assert_eq!(result[2], 4.0);
-        assert_eq!(result[3], 5.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[2.0, 3.0, 4.0, 5.0]).unwrap());
     }
 
     #[test]
     fn test_div_vector() {
-        let shape = shape![4].unwrap();
         let data1 = vec![4.0, 6.0, 8.0, 10.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
         let vector1 = DynamicVector::new(&data1).unwrap();
         let vector2 = DynamicVector::new(&data2).unwrap();
         let result = vector1 / vector2;
-        assert_eq!(result[0], 2.0);
-        assert_eq!(result[1], 2.0);
-        assert_eq!(result[2], 2.0);
-        assert_eq!(result[3], 2.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[2.0; 4]).unwrap());
     }
 
     #[test]
@@ -586,23 +507,14 @@ mod tests {
         let vector = DynamicVector::new(&data1).unwrap();
         let tensor = DynamicTensor::new(&shape, &data2).unwrap();
         let result = vector / tensor;
-        assert_eq!(result[0], 2.0);
-        assert_eq!(result[1], 2.0);
-        assert_eq!(result[2], 2.0);
-        assert_eq!(result[3], 2.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[2.0; 4]).unwrap());
     }
 
     #[test]
     fn test_pow_vector() {
-        let shape = shape![4].unwrap();
         let data = vec![2.0, 3.0, 4.0, 5.0];
         let vector = DynamicVector::new(&data).unwrap();
         let result = vector.pow(2.0);
-        assert_eq!(result[0], 4.0);
-        assert_eq!(result[1], 9.0);
-        assert_eq!(result[2], 16.0);
-        assert_eq!(result[3], 25.0);
-        assert_eq!(result.shape(), &shape);
+        assert_eq!(result, DynamicVector::new(&[4.0, 9.0, 16.0, 25.0]).unwrap());
     }
 }
