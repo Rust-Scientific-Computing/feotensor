@@ -43,7 +43,21 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         Tensor::fill(shape, T::one())
     }
 
+    pub fn reshape(&self, shape: &Shape) -> Result<Tensor<T>, ShapeError> {
+        if self.shape.size() != shape.size() {
+            return Err(ShapeError::new("Data length does not match shape size"));
+        }
+        Ok(Tensor {
+            data: self.data.clone(),
+            shape: shape.clone(),
+        })
+    }
+
     // Properties
+    pub fn raw(&self) -> &DynamicStorage<T> {
+        &self.data
+    }
+
     pub fn shape(&self) -> &Shape {
         &self.shape
     }
@@ -51,6 +65,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         self.shape.size()
     }
 
+    // Access methods
     pub fn get(&self, coord: &Coordinate) -> Result<&T, ShapeError> {
         Ok(&self.data[self.data.flatten(coord, &self.shape)?])
     }
@@ -66,7 +81,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         Ok(())
     }
 
-    // // Reduction operations
+    // Reduction operations
     pub fn sum(&self, axes: Axes) -> Tensor<T> {
         let all_axes = (0..self.shape.order()).collect::<Vec<_>>();
         let remaining_axes = all_axes
@@ -592,6 +607,31 @@ mod tests {
 
         assert_eq!(tensor.shape(), &shape);
         assert_eq!(tensor.data, DynamicStorage::new(vec![1.0; shape.size()]));
+    }
+
+    #[test]
+    fn test_reshape_tensor() {
+        let shape = shape![2, 3].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+
+        let new_shape = shape![3, 2].unwrap();
+        let reshaped_tensor = tensor.reshape(&new_shape).unwrap();
+
+        assert_eq!(reshaped_tensor.shape(), &new_shape);
+        assert_eq!(reshaped_tensor.data, DynamicStorage::new(data));
+    }
+
+    #[test]
+    fn test_reshape_tensor_shape_mismatch() {
+        let shape = shape![2, 3].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+
+        let new_shape = shape![4, 2].unwrap();
+        let result = tensor.reshape(&new_shape);
+
+        assert!(result.is_err());
     }
 
     #[test]

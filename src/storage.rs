@@ -4,7 +4,7 @@ use crate::coordinate::Coordinate;
 use crate::error::ShapeError;
 use crate::shape::Shape;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DynamicStorage<T> {
     data: Vec<T>,
 }
