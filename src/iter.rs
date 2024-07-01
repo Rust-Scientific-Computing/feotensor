@@ -12,7 +12,7 @@ pub struct IndexIterator {
 impl IndexIterator {
     pub fn new(shape: &Shape) -> Self {
         // (shape.order() == 0) => `next` returns None before `current` is used
-        let current = coord![0; max(shape.order(), 1)].unwrap();
+        let current = coord![0; max(shape.order(), 1)];
         IndexIterator {
             shape: shape.clone(),
             current,
@@ -54,33 +54,33 @@ mod tests {
 
     #[test]
     fn test_index_iterator() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let mut iter = IndexIterator::new(&shape);
 
-        assert_eq!(iter.next(), Some(coord![0, 0].unwrap()));
-        assert_eq!(iter.next(), Some(coord![0, 1].unwrap()));
-        assert_eq!(iter.next(), Some(coord![0, 2].unwrap()));
-        assert_eq!(iter.next(), Some(coord![1, 0].unwrap()));
-        assert_eq!(iter.next(), Some(coord![1, 1].unwrap()));
-        assert_eq!(iter.next(), Some(coord![1, 2].unwrap()));
+        assert_eq!(iter.next(), Some(coord![0, 0]));
+        assert_eq!(iter.next(), Some(coord![0, 1]));
+        assert_eq!(iter.next(), Some(coord![0, 2]));
+        assert_eq!(iter.next(), Some(coord![1, 0]));
+        assert_eq!(iter.next(), Some(coord![1, 1]));
+        assert_eq!(iter.next(), Some(coord![1, 2]));
         assert_eq!(iter.next(), None);
     }
 
     #[test]
     fn test_index_iterator_single_dimension() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let mut iter = IndexIterator::new(&shape);
 
-        assert_eq!(iter.next(), Some(coord![0].unwrap()));
-        assert_eq!(iter.next(), Some(coord![1].unwrap()));
-        assert_eq!(iter.next(), Some(coord![2].unwrap()));
-        assert_eq!(iter.next(), Some(coord![3].unwrap()));
+        assert_eq!(iter.next(), Some(coord![0]));
+        assert_eq!(iter.next(), Some(coord![1]));
+        assert_eq!(iter.next(), Some(coord![2]));
+        assert_eq!(iter.next(), Some(coord![3]));
         assert_eq!(iter.next(), None);
     }
 
     #[test]
     fn test_index_iterator_empty_tensor() {
-        let shape = shape![].unwrap();
+        let shape = shape![];
         let mut iter = IndexIterator::new(&shape);
 
         assert_eq!(iter.next(), None);

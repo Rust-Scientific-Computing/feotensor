@@ -83,7 +83,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         // We resolve to a scalar value
         if axes.is_empty() | remaining_dims.is_empty() {
             let sum: T = self.data.iter().fold(T::zero(), |acc, x| acc + *x);
-            return Tensor::new(&shape![1].unwrap(), &[sum]).unwrap();
+            return Tensor::new(&shape![1], &[sum]).unwrap();
         }
 
         // Create new tensor with right shape
@@ -557,7 +557,7 @@ mod tests {
 
     #[test]
     fn test_new_tensor() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0];
 
         let tensor = Tensor::new(&shape, &data).unwrap();
@@ -568,7 +568,7 @@ mod tests {
 
     #[test]
     fn test_new_tensor_shape_data_mismatch() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0]; // Mismatched data length
 
         let result = Tensor::new(&shape, &data);
@@ -578,7 +578,7 @@ mod tests {
 
     #[test]
     fn test_zeros_tensor() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let tensor: Tensor<f32> = Tensor::zeros(&shape);
 
         assert_eq!(tensor.shape(), &shape);
@@ -587,7 +587,7 @@ mod tests {
 
     #[test]
     fn test_ones_tensor() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let tensor: Tensor<f32> = Tensor::ones(&shape);
 
         assert_eq!(tensor.shape(), &shape);
@@ -596,7 +596,7 @@ mod tests {
 
     #[test]
     fn test_fill_tensor() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let tensor: Tensor<f32> = Tensor::fill(&shape, 7.0);
 
         assert_eq!(tensor.shape(), &shape);
@@ -605,7 +605,7 @@ mod tests {
 
     #[test]
     fn test_tensor_shape() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let tensor: Tensor<f32> = Tensor::zeros(&shape);
 
         assert_eq!(tensor.shape(), &shape);
@@ -613,7 +613,7 @@ mod tests {
 
     #[test]
     fn test_tensor_size() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let tensor: Tensor<f32> = Tensor::zeros(&shape);
 
         assert_eq!(tensor.size(), 6);
@@ -621,82 +621,82 @@ mod tests {
 
     #[test]
     fn test_tensor_get() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert_eq!(*tensor.get(&coord![0, 0].unwrap()).unwrap(), 1.0);
-        assert_eq!(*tensor.get(&coord![0, 1].unwrap()).unwrap(), 2.0);
-        assert_eq!(*tensor.get(&coord![1, 0].unwrap()).unwrap(), 3.0);
-        assert_eq!(*tensor.get(&coord![1, 1].unwrap()).unwrap(), 4.0);
+        assert_eq!(*tensor.get(&coord![0, 0]).unwrap(), 1.0);
+        assert_eq!(*tensor.get(&coord![0, 1]).unwrap(), 2.0);
+        assert_eq!(*tensor.get(&coord![1, 0]).unwrap(), 3.0);
+        assert_eq!(*tensor.get(&coord![1, 1]).unwrap(), 4.0);
     }
 
     #[test]
     fn test_tensor_set() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut tensor = Tensor::new(&shape, &data).unwrap();
 
-        tensor.set(&coord![0, 0].unwrap(), 5.0).unwrap();
-        tensor.set(&coord![0, 1].unwrap(), 6.0).unwrap();
-        tensor.set(&coord![1, 0].unwrap(), 7.0).unwrap();
-        tensor.set(&coord![1, 1].unwrap(), 8.0).unwrap();
+        tensor.set(&coord![0, 0], 5.0).unwrap();
+        tensor.set(&coord![0, 1], 6.0).unwrap();
+        tensor.set(&coord![1, 0], 7.0).unwrap();
+        tensor.set(&coord![1, 1], 8.0).unwrap();
 
-        assert_eq!(*tensor.get(&coord![0, 0].unwrap()).unwrap(), 5.0);
-        assert_eq!(*tensor.get(&coord![0, 1].unwrap()).unwrap(), 6.0);
-        assert_eq!(*tensor.get(&coord![1, 0].unwrap()).unwrap(), 7.0);
-        assert_eq!(*tensor.get(&coord![1, 1].unwrap()).unwrap(), 8.0);
+        assert_eq!(*tensor.get(&coord![0, 0]).unwrap(), 5.0);
+        assert_eq!(*tensor.get(&coord![0, 1]).unwrap(), 6.0);
+        assert_eq!(*tensor.get(&coord![1, 0]).unwrap(), 7.0);
+        assert_eq!(*tensor.get(&coord![1, 1]).unwrap(), 8.0);
     }
 
     #[test]
     fn test_tensor_get_out_of_bounds() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert!(tensor.get(&coord![2, 0].unwrap()).is_err());
-        assert!(tensor.get(&coord![0, 2].unwrap()).is_err());
-        assert!(tensor.get(&coord![2, 2].unwrap()).is_err());
+        assert!(tensor.get(&coord![2, 0]).is_err());
+        assert!(tensor.get(&coord![0, 2]).is_err());
+        assert!(tensor.get(&coord![2, 2]).is_err());
     }
 
     #[test]
     fn test_tensor_set_out_of_bounds() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let mut tensor = Tensor::new(&shape, &data).unwrap();
 
-        assert!(tensor.set(&coord![2, 0].unwrap(), 5.0).is_err());
-        assert!(tensor.set(&coord![0, 2].unwrap(), 6.0).is_err());
-        assert!(tensor.set(&coord![2, 2].unwrap(), 7.0).is_err());
+        assert!(tensor.set(&coord![2, 0], 5.0).is_err());
+        assert!(tensor.set(&coord![0, 2], 6.0).is_err());
+        assert!(tensor.set(&coord![2, 2], 7.0).is_err());
     }
 
     #[test]
     fn test_tensor_sum_no_axis_1d() {
-        let shape = shape![5].unwrap();
+        let shape = shape![5];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.sum(vec![]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![15.0]));
     }
 
     #[test]
     fn test_tensor_sum_no_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.sum(vec![]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![21.0]));
     }
 
     #[test]
     fn test_tensor_sum_no_axis_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
         ];
@@ -704,37 +704,37 @@ mod tests {
 
         let result = tensor.sum(vec![]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![78.0]));
     }
 
     #[test]
     fn test_tensor_sum_one_axis_1d() {
-        let shape = shape![5].unwrap();
+        let shape = shape![5];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.sum(vec![0]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![15.0]));
     }
 
     #[test]
     fn test_tensor_sum_one_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.sum(vec![0]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![5.0, 7.0, 9.0]));
     }
 
     #[test]
     fn test_tensor_sum_one_axis_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
         ];
@@ -742,7 +742,7 @@ mod tests {
 
         let result = tensor.sum(vec![0]);
 
-        assert_eq!(result.shape(), &shape![2, 3].unwrap());
+        assert_eq!(result.shape(), &shape![2, 3]);
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![8.0, 10.0, 12.0, 14.0, 16.0, 18.0])
@@ -751,19 +751,19 @@ mod tests {
 
     #[test]
     fn test_tensor_sum_multiple_axes_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.sum(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![21.0]));
     }
 
     #[test]
     fn test_tensor_sum_multiple_axes_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
         ];
@@ -771,37 +771,37 @@ mod tests {
 
         let result = tensor.sum(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![22.0, 26.0, 30.0]));
     }
 
     #[test]
     fn test_tensor_mean_no_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.mean(vec![]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![3.5]));
     }
 
     #[test]
     fn test_tensor_mean_one_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.mean(vec![0]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![2.5, 3.5, 4.5]));
     }
 
     #[test]
     fn test_tensor_mean_one_axis_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
         ];
@@ -809,7 +809,7 @@ mod tests {
 
         let result = tensor.mean(vec![0]);
 
-        assert_eq!(result.shape(), &shape![2, 3].unwrap());
+        assert_eq!(result.shape(), &shape![2, 3]);
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![4.0, 5.0, 6.0, 7.0, 8.0, 9.0])
@@ -818,19 +818,19 @@ mod tests {
 
     #[test]
     fn test_tensor_mean_multiple_axes_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.mean(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![3.5]));
     }
 
     #[test]
     fn test_tensor_mean_multiple_axes_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
         ];
@@ -838,37 +838,37 @@ mod tests {
 
         let result = tensor.mean(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![5.5, 6.5, 7.5]));
     }
 
     #[test]
     fn test_tensor_var_no_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 1.0, 1.0, 7.0, 7.0, 7.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.var(vec![]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![9.0]));
     }
 
     #[test]
     fn test_tensor_var_one_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.var(vec![0]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![2.25, 2.25, 2.25]));
     }
 
     #[test]
     fn test_tensor_var_one_axis_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
         ];
@@ -876,7 +876,7 @@ mod tests {
 
         let result = tensor.var(vec![0]);
 
-        assert_eq!(result.shape(), &shape![2, 3].unwrap());
+        assert_eq!(result.shape(), &shape![2, 3]);
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![9.0, 9.0, 9.0, 9.0, 9.0, 9.0])
@@ -885,19 +885,19 @@ mod tests {
 
     #[test]
     fn test_tensor_var_multiple_axes_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, 1.0, 1.0, 7.0, 7.0, 7.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.var(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![9.0]));
     }
 
     #[test]
     fn test_tensor_var_multiple_axes_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, 3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0,
         ];
@@ -905,37 +905,37 @@ mod tests {
 
         let result = tensor.var(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![45.0, 45.0, 45.0]));
     }
 
     #[test]
     fn test_tensor_max_no_axis_1d() {
-        let shape = shape![5].unwrap();
+        let shape = shape![5];
         let data = vec![1.0, -2.0, 3.0, -4.0, 5.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.max(vec![]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![5.0]));
     }
 
     #[test]
     fn test_tensor_max_one_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, -2.0, 3.0, -4.0, 5.0, -6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.max(vec![0]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![1.0, 5.0, 3.0]));
     }
 
     #[test]
     fn test_tensor_max_multiple_axes_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, -2.0, 3.0, -4.0, 5.0, -6.0, 7.0, -8.0, 9.0, -10.0, 11.0, -12.0,
         ];
@@ -943,37 +943,37 @@ mod tests {
 
         let result = tensor.max(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![7.0, 11.0, 9.0]));
     }
 
     #[test]
     fn test_tensor_min_no_axis_1d() {
-        let shape = shape![5].unwrap();
+        let shape = shape![5];
         let data = vec![1.0, -2.0, 3.0, -4.0, 5.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.min(vec![]);
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![-4.0]));
     }
 
     #[test]
     fn test_tensor_min_one_axis_2d() {
-        let shape = shape![2, 3].unwrap();
+        let shape = shape![2, 3];
         let data = vec![1.0, -2.0, 3.0, -4.0, 5.0, -6.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
 
         let result = tensor.min(vec![0]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![-4.0, -2.0, -6.0]));
     }
 
     #[test]
     fn test_tensor_min_multiple_axes_3d() {
-        let shape = shape![2, 2, 3].unwrap();
+        let shape = shape![2, 2, 3];
         let data = vec![
             1.0, -2.0, 3.0, -4.0, 5.0, -6.0, 7.0, -8.0, 9.0, -10.0, 11.0, -12.0,
         ];
@@ -981,23 +981,23 @@ mod tests {
 
         let result = tensor.min(vec![0, 1]);
 
-        assert_eq!(result.shape(), &shape![3].unwrap());
+        assert_eq!(result.shape(), &shape![3]);
         assert_eq!(result.data, DynamicStorage::new(vec![-10.0, -8.0, -12.0]));
     }
 
     #[test]
     fn test_tensor_prod_1d_1d() {
-        let shape1 = shape![3].unwrap();
+        let shape1 = shape![3];
         let data1 = vec![1.0, 2.0, 3.0];
         let tensor1 = Tensor::new(&shape1, &data1).unwrap();
 
-        let shape2 = shape![2].unwrap();
+        let shape2 = shape![2];
         let data2 = vec![4.0, 5.0];
         let tensor2 = Tensor::new(&shape2, &data2).unwrap();
 
         let result = tensor1.prod(&tensor2);
 
-        assert_eq!(result.shape(), &shape![3, 2].unwrap());
+        assert_eq!(result.shape(), &shape![3, 2]);
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![4.0, 5.0, 8.0, 10.0, 12.0, 15.0])
@@ -1006,17 +1006,17 @@ mod tests {
 
     #[test]
     fn test_tensor_prod_2d_1d() {
-        let shape1 = shape![2, 2].unwrap();
+        let shape1 = shape![2, 2];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor1 = Tensor::new(&shape1, &data1).unwrap();
 
-        let shape2 = shape![2].unwrap();
+        let shape2 = shape![2];
         let data2 = vec![5.0, 6.0];
         let tensor2 = Tensor::new(&shape2, &data2).unwrap();
 
         let result = tensor1.prod(&tensor2);
 
-        assert_eq!(result.shape(), &shape![2, 2, 2].unwrap());
+        assert_eq!(result.shape(), &shape![2, 2, 2]);
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![5.0, 6.0, 10.0, 12.0, 15.0, 18.0, 20.0, 24.0])
@@ -1025,17 +1025,17 @@ mod tests {
 
     #[test]
     fn test_tensor_prod_2d_2d() {
-        let shape1 = shape![2, 2].unwrap();
+        let shape1 = shape![2, 2];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor1 = Tensor::new(&shape1, &data1).unwrap();
 
-        let shape2 = shape![2, 2].unwrap();
+        let shape2 = shape![2, 2];
         let data2 = vec![5.0, 6.0, 7.0, 8.0];
         let tensor2 = Tensor::new(&shape2, &data2).unwrap();
 
         let result = tensor1.prod(&tensor2);
 
-        assert_eq!(result.shape(), &shape![2, 2, 2, 2].unwrap());
+        assert_eq!(result.shape(), &shape![2, 2, 2, 2]);
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![
@@ -1047,7 +1047,7 @@ mod tests {
 
     #[test]
     fn test_add_tensor() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor1 = Tensor::new(&shape, &data1).unwrap();
 
@@ -1059,7 +1059,7 @@ mod tests {
 
     #[test]
     fn test_add_tensors() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![5.0, 6.0, 7.0, 8.0];
         let tensor1 = Tensor::new(&shape, &data1).unwrap();
@@ -1073,7 +1073,7 @@ mod tests {
 
     #[test]
     fn test_sub_tensor() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![5.0, 6.0, 7.0, 8.0];
 
         let tensor1 = Tensor::new(&shape, &data1).unwrap();
@@ -1086,7 +1086,7 @@ mod tests {
 
     #[test]
     fn test_sub_tensors() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data1 = vec![5.0, 6.0, 7.0, 8.0];
         let data2 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor1 = Tensor::new(&shape, &data1).unwrap();
@@ -1100,7 +1100,7 @@ mod tests {
 
     #[test]
     fn test_mul_tensor() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
 
         let tensor1 = Tensor::new(&shape, &data1).unwrap();
@@ -1113,7 +1113,7 @@ mod tests {
 
     #[test]
     fn test_div_tensor() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![4.0, 6.0, 8.0, 10.0];
 
         let tensor1 = Tensor::new(&shape, &data1).unwrap();
@@ -1126,7 +1126,7 @@ mod tests {
 
     #[test]
     fn test_vec_vec_mul_single() {
-        let shape = shape![1].unwrap();
+        let shape = shape![1];
         let data1 = vec![2.0];
         let data2 = vec![5.0];
 
@@ -1135,13 +1135,13 @@ mod tests {
 
         let result = tensor1 * tensor2;
 
-        assert_eq!(result.shape(), &shape![1].unwrap());
+        assert_eq!(result.shape(), &shape![1]);
         assert_eq!(result.data, DynamicStorage::new(vec![10.0]));
     }
 
     #[test]
     fn test_vec_vec_mul() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
 
@@ -1156,8 +1156,8 @@ mod tests {
 
     #[test]
     fn test_matrix_matrix_mul() {
-        let shape1 = shape![2, 3].unwrap();
-        let shape2 = shape![2, 3].unwrap();
+        let shape1 = shape![2, 3];
+        let shape2 = shape![2, 3];
         let data1 = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let data2 = vec![7.0, 8.0, 9.0, 10.0, 11.0, 12.0];
 
@@ -1166,7 +1166,7 @@ mod tests {
 
         let result = tensor1 * tensor2;
 
-        assert_eq!(result.shape(), &shape![2, 3].unwrap());
+        assert_eq!(result.shape(), &shape![2, 3]);
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![7.0, 16.0, 27.0, 40.0, 55.0, 72.0])
@@ -1175,7 +1175,7 @@ mod tests {
 
     #[test]
     fn test_add_tensor_vector() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
@@ -1190,7 +1190,7 @@ mod tests {
 
     #[test]
     fn test_sub_tensor_vector() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![2.0, 3.0, 4.0, 5.0];
         let data2 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
@@ -1205,7 +1205,7 @@ mod tests {
 
     #[test]
     fn test_mul_tensor_vector() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![2.0, 3.0, 4.0, 5.0];
         let data2 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
@@ -1220,7 +1220,7 @@ mod tests {
 
     #[test]
     fn test_div_tensor_vector() {
-        let shape = shape![4].unwrap();
+        let shape = shape![4];
         let data1 = vec![2.0, 4.0, 6.0, 8.0];
         let data2 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
@@ -1235,67 +1235,67 @@ mod tests {
 
     #[test]
     fn test_add_tensor_matrix() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
         let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = tensor + matrix;
-        assert_eq!(result[coord![0, 0].unwrap()], 3.0);
-        assert_eq!(result[coord![0, 1].unwrap()], 5.0);
-        assert_eq!(result[coord![1, 0].unwrap()], 7.0);
-        assert_eq!(result[coord![1, 1].unwrap()], 9.0);
+        assert_eq!(result[coord![0, 0]], 3.0);
+        assert_eq!(result[coord![0, 1]], 5.0);
+        assert_eq!(result[coord![1, 0]], 7.0);
+        assert_eq!(result[coord![1, 1]], 9.0);
         assert_eq!(result.shape(), &shape);
     }
 
     #[test]
     fn test_sub_tensor_matrix() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data1 = vec![2.0, 3.0, 4.0, 5.0];
         let data2 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
         let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = tensor - matrix;
-        assert_eq!(result[coord![0, 0].unwrap()], 1.0);
-        assert_eq!(result[coord![0, 1].unwrap()], 1.0);
-        assert_eq!(result[coord![1, 0].unwrap()], 1.0);
-        assert_eq!(result[coord![1, 1].unwrap()], 1.0);
+        assert_eq!(result[coord![0, 0]], 1.0);
+        assert_eq!(result[coord![0, 1]], 1.0);
+        assert_eq!(result[coord![1, 0]], 1.0);
+        assert_eq!(result[coord![1, 1]], 1.0);
         assert_eq!(result.shape(), &shape);
     }
 
     #[test]
     fn test_mul_tensor_matrix() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data1 = vec![2.0, 3.0, 4.0, 5.0];
         let data2 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
         let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = tensor * matrix;
-        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
-        assert_eq!(result[coord![0, 1].unwrap()], 6.0);
-        assert_eq!(result[coord![1, 0].unwrap()], 12.0);
-        assert_eq!(result[coord![1, 1].unwrap()], 20.0);
+        assert_eq!(result[coord![0, 0]], 2.0);
+        assert_eq!(result[coord![0, 1]], 6.0);
+        assert_eq!(result[coord![1, 0]], 12.0);
+        assert_eq!(result[coord![1, 1]], 20.0);
         assert_eq!(result.shape(), &shape);
     }
 
     #[test]
     fn test_div_tensor_matrix() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data1 = vec![2.0, 4.0, 6.0, 8.0];
         let data2 = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = DynamicTensor::new(&shape, &data1).unwrap();
         let matrix = DynamicMatrix::new(&shape, &data2).unwrap();
         let result = tensor / matrix;
-        assert_eq!(result[coord![0, 0].unwrap()], 2.0);
-        assert_eq!(result[coord![0, 1].unwrap()], 2.0);
-        assert_eq!(result[coord![1, 0].unwrap()], 2.0);
-        assert_eq!(result[coord![1, 1].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 0]], 2.0);
+        assert_eq!(result[coord![0, 1]], 2.0);
+        assert_eq!(result[coord![1, 0]], 2.0);
+        assert_eq!(result[coord![1, 1]], 2.0);
         assert_eq!(result.shape(), &shape);
     }
 
     #[test]
     fn test_display_1d_tensor() {
-        let shape = shape![3].unwrap();
+        let shape = shape![3];
         let data = vec![1.0, 2.0, 3.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
         let display = tensor.display();
@@ -1304,7 +1304,7 @@ mod tests {
 
     #[test]
     fn test_display_2d_tensor() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
         let display = tensor.display();
@@ -1313,7 +1313,7 @@ mod tests {
 
     #[test]
     fn test_display_3d_tensor() {
-        let shape = shape![2, 2, 2].unwrap();
+        let shape = shape![2, 2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
         let display = tensor.display();
@@ -1322,7 +1322,7 @@ mod tests {
 
     #[test]
     fn test_display_4d_tensor() {
-        let shape = shape![2, 2, 2, 2].unwrap();
+        let shape = shape![2, 2, 2, 2];
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
         ];
@@ -1333,7 +1333,7 @@ mod tests {
 
     #[test]
     fn test_pow_tensor_square() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
         let result = tensor.pow(2.0);
@@ -1343,7 +1343,7 @@ mod tests {
 
     #[test]
     fn test_pow_tensor_sqrt() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 4.0, 9.0, 16.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
         let result = tensor.pow(0.5);
@@ -1353,7 +1353,7 @@ mod tests {
 
     #[test]
     fn test_pow_tensor_negative_exponent() {
-        let shape = shape![2, 2].unwrap();
+        let shape = shape![2, 2];
         let data = vec![1.0, 2.0, 4.0, 8.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
         let result = tensor.pow(-1.0);

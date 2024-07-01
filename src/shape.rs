@@ -60,7 +60,7 @@ macro_rules! shape {
     ($($dim:expr),*) => {
         {
             use $crate::shape::Shape;
-            Shape::new(vec![$($dim),*])
+            Shape::new(vec![$($dim),*]).unwrap()
         }
     };
 }
@@ -97,10 +97,10 @@ mod tests {
 
     #[test]
     fn test_shape_macro() {
-        let shape = shape![2, 3, 4].unwrap();
+        let shape = shape![2, 3, 4];
         assert_eq!(shape.dims, vec![2, 3, 4]);
 
-        let shape = shape![1].unwrap();
+        let shape = shape![1];
         assert_eq!(shape.dims, vec![1]);
     }
 
