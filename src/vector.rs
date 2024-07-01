@@ -28,6 +28,11 @@ impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
         Ok(DynamicVector { tensor })
     }
 
+    pub fn tile(tensor: &DynamicVector<T>, reps: &Shape) -> Result<DynamicVector<T>, ShapeError> {
+        let result = DynamicTensor::tile(tensor, reps)?;
+        Ok(DynamicVector { tensor: result })
+    }
+
     pub fn fill(shape: &Shape, value: T) -> Result<DynamicVector<T>, ShapeError> {
         if shape.order() != 1 {
             return Err(ShapeError::new("Shape must have order of 1"));
@@ -265,6 +270,23 @@ mod tests {
         let tensor = DynamicTensor::new(&shape, &data).unwrap();
         let result = DynamicVector::from_tensor(tensor);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tile() {
+        let data = vec![1.0, 2.0];
+        let vector = DynamicVector::new(&data).unwrap();
+        let reps = shape![3].unwrap();
+
+        let result = DynamicVector::tile(&vector, &reps).unwrap();
+
+        assert_eq!(result.shape(), &shape![6].unwrap());
+        assert_eq!(result[0], 1.0);
+        assert_eq!(result[1], 2.0);
+        assert_eq!(result[2], 1.0);
+        assert_eq!(result[3], 2.0);
+        assert_eq!(result[4], 1.0);
+        assert_eq!(result[5], 2.0);
     }
 
     #[test]
