@@ -321,7 +321,7 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
 
         // We resolve to a scalar value
         if axes.is_empty() || remaining_dims.is_empty() {
-            let mut data = self.data.iter().map(|&x| x).collect::<Vec<T>>();
+            let mut data = self.data.iter().copied().collect::<Vec<T>>();
             data.sort_by(|a, b| a.partial_cmp(b).unwrap());
             let mid = data.len() / 2;
             let median = if data.len() % 2 == 0 {
