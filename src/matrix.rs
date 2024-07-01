@@ -29,6 +29,11 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
         Ok(DynamicMatrix { tensor })
     }
 
+    pub fn tile(tensor: &DynamicMatrix<T>, reps: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
+        let result = DynamicTensor::tile(tensor, reps)?;
+        Ok(DynamicMatrix { tensor: result })
+    }
+
     pub fn fill(shape: &Shape, value: T) -> Result<DynamicMatrix<T>, ShapeError> {
         let data = vec![value; shape.size()];
         DynamicMatrix::new(shape, &data)
@@ -277,6 +282,34 @@ mod tests {
         let tensor = DynamicTensor::new(&shape, &data).unwrap();
         let result = DynamicMatrix::from_tensor(tensor);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tile() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let matrix = DynamicMatrix::new(&shape, &data).unwrap();
+        let reps = shape![2, 2].unwrap();
+
+        let result = DynamicMatrix::tile(&matrix, &reps).unwrap();
+
+        assert_eq!(result.shape(), &shape![4, 4].unwrap());
+        assert_eq!(result[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(result[coord![0, 1].unwrap()], 2.0);
+        assert_eq!(result[coord![0, 2].unwrap()], 1.0);
+        assert_eq!(result[coord![0, 3].unwrap()], 2.0);
+        assert_eq!(result[coord![1, 0].unwrap()], 3.0);
+        assert_eq!(result[coord![1, 1].unwrap()], 4.0);
+        assert_eq!(result[coord![1, 2].unwrap()], 3.0);
+        assert_eq!(result[coord![1, 3].unwrap()], 4.0);
+        assert_eq!(result[coord![2, 0].unwrap()], 1.0);
+        assert_eq!(result[coord![2, 1].unwrap()], 2.0);
+        assert_eq!(result[coord![2, 2].unwrap()], 1.0);
+        assert_eq!(result[coord![2, 3].unwrap()], 2.0);
+        assert_eq!(result[coord![3, 0].unwrap()], 3.0);
+        assert_eq!(result[coord![3, 1].unwrap()], 4.0);
+        assert_eq!(result[coord![3, 2].unwrap()], 3.0);
+        assert_eq!(result[coord![3, 3].unwrap()], 4.0);
     }
 
     #[test]

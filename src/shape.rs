@@ -24,6 +24,10 @@ impl Shape {
         self.dims.len()
     }
 
+    pub fn iter(&self) -> std::slice::Iter<'_, usize> {
+        self.dims.iter()
+    }
+
     pub fn stack(&self, rhs: &Shape) -> Shape {
         let mut new_dims = self.dims.clone();
         new_dims.extend(rhs.dims.iter());
