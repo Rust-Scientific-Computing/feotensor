@@ -29,6 +29,45 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         })
     }
 
+    pub fn tile(tensor: &Tensor<T>, reps: &Shape) -> Result<Tensor<T>, ShapeError> {
+        if tensor.shape.order() != reps.order() {
+            return Err(ShapeError::new("Tensor and reps must have the same order"));
+        }
+
+        // Calculate the new shape by multiplying each dimension of the tensor by the corresponding rep
+        let new_shape = tensor.shape.iter().zip(reps.iter()).map(|(dim, &rep)| dim * rep).collect::<Vec<_>>();
+        let new_shape = Shape::new(new_shape).unwrap();
+        let mut new_data = Vec::with_capacity(new_shape.size());
+
+        // Initialize indices to keep track of the current position in the new tensor
+        let mut indices = vec![0; tensor.shape.order()];
+        for _ in 0..new_shape.size() {
+            let mut original_index = 0;
+            let mut stride = 1;
+
+            // Calculate the corresponding index in the original tensor
+            for (i, &dim) in tensor.shape.iter().enumerate().rev() {
+                original_index += (indices[i] % dim) * stride;
+                stride *= dim;
+            }
+
+            // Push the value from the original tensor to the new data
+            new_data.push(tensor.data[original_index]);
+
+            // Update indices for the next position
+            for i in (0..indices.len()).rev() {
+                indices[i] += 1;
+                if indices[i] < new_shape[i] {
+                    break;
+                }
+                indices[i] = 0;
+            }
+        }
+
+        // Create and return the new tensor with the new shape and new data
+        Tensor::new(&new_shape, &new_data)
+    }
+
     pub fn fill(shape: &Shape, value: T) -> Tensor<T> {
         let mut vec = Vec::with_capacity(shape.size());
         for _ in 0..shape.size() {
@@ -592,6 +631,82 @@ mod tests {
 
         assert_eq!(tensor.shape(), &shape);
         assert_eq!(tensor.data, DynamicStorage::new(vec![1.0; shape.size()]));
+    }
+
+    #[test]
+    fn test_tile_tensor() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let reps = shape![2, 2].unwrap();
+
+        let result = Tensor::tile(&tensor, &reps).unwrap();
+
+        assert_eq!(result.shape(), &shape![4, 4].unwrap());
+        assert_eq!(
+            result.data,
+            DynamicStorage::new(vec![
+                1.0, 2.0, 1.0, 2.0,
+                3.0, 4.0, 3.0, 4.0,
+                1.0, 2.0, 1.0, 2.0,
+                3.0, 4.0, 3.0, 4.0
+            ])
+        );
+    }
+
+    #[test]
+    fn test_tile_tensor_mismatched_order() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let reps = shape![2, 2, 2].unwrap(); // Mismatched order
+
+        let result = Tensor::tile(&tensor, &reps);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tile_tensor_1d() {
+        let shape = shape![3].unwrap();
+        let data = vec![1.0, 2.0, 3.0];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let reps = shape![2].unwrap();
+
+        let result = Tensor::tile(&tensor, &reps).unwrap();
+
+        assert_eq!(result.shape(), &shape![6].unwrap());
+        assert_eq!(
+            result.data,
+            DynamicStorage::new(vec![1.0, 2.0, 3.0, 1.0, 2.0, 3.0])
+        );
+    }
+
+    #[test]
+    fn test_tile_tensor_3d() {
+        let shape = shape![2, 2, 2].unwrap();
+        let data = vec![
+            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0
+        ];
+        let tensor = Tensor::new(&shape, &data).unwrap();
+        let reps = shape![2, 2, 2].unwrap();
+
+        let result = Tensor::tile(&tensor, &reps).unwrap();
+
+        assert_eq!(result.shape(), &shape![4, 4, 4].unwrap());
+        assert_eq!(
+            result.data,
+            DynamicStorage::new(vec![
+                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
+                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
+                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
+                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
+                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
+                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
+                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
+                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
+            ])
+        );
     }
 
     #[test]
