@@ -35,7 +35,12 @@ impl<T: Num + PartialOrd + Copy> Tensor<T> {
         }
 
         // Calculate the new shape by multiplying each dimension of the tensor by the corresponding rep
-        let new_shape = tensor.shape.iter().zip(reps.iter()).map(|(dim, &rep)| dim * rep).collect::<Vec<_>>();
+        let new_shape = tensor
+            .shape
+            .iter()
+            .zip(reps.iter())
+            .map(|(dim, &rep)| dim * rep)
+            .collect::<Vec<_>>();
         let new_shape = Shape::new(new_shape).unwrap();
         let mut new_data = Vec::with_capacity(new_shape.size());
 
@@ -646,10 +651,7 @@ mod tests {
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![
-                1.0, 2.0, 1.0, 2.0,
-                3.0, 4.0, 3.0, 4.0,
-                1.0, 2.0, 1.0, 2.0,
-                3.0, 4.0, 3.0, 4.0
+                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0
             ])
         );
     }
@@ -685,9 +687,7 @@ mod tests {
     #[test]
     fn test_tile_tensor_3d() {
         let shape = shape![2, 2, 2].unwrap();
-        let data = vec![
-            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0
-        ];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
         let tensor = Tensor::new(&shape, &data).unwrap();
         let reps = shape![2, 2, 2].unwrap();
 
@@ -697,14 +697,10 @@ mod tests {
         assert_eq!(
             result.data,
             DynamicStorage::new(vec![
-                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
-                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
-                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
-                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
-                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
-                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
-                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
-                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
+                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
+                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0, 5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
+                1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 4.0,
+                5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0, 5.0, 6.0, 5.0, 6.0, 7.0, 8.0, 7.0, 8.0,
             ])
         );
     }
