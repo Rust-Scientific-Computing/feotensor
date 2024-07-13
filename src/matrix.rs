@@ -56,8 +56,9 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
     }
 
     pub fn flatten(&self) -> DynamicVector<T> {
-        let data = self.tensor.raw().iter().cloned().collect::<Vec<T>>();
-        DynamicVector::new(&data).unwrap()
+        let flattened_shape = Shape::new(vec![self.tensor.size()]).unwrap();
+        let result = self.tensor.reshape(&flattened_shape).unwrap();
+        DynamicVector::from_tensor(result).unwrap()
     }
 
     pub fn sum(&self, axes: Axes) -> DynamicVector<T> {
