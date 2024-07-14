@@ -47,12 +47,16 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
         Self::fill(shape, T::one())
     }
 
-    pub fn reshape(&self, shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
+    pub fn redimension(&self, shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
         if shape.order() != 2 {
             return Err(ShapeError::new("Shape must have order of 2"));
         }
         let result = self.tensor.reshape(shape)?;
         Ok(DynamicMatrix { tensor: result })
+    }
+
+    pub fn reshape(&self, shape: &Shape) -> Result<DynamicTensor<T>, ShapeError> {
+        self.tensor.reshape(shape)
     }
 
     pub fn flatten(&self) -> DynamicVector<T> {
@@ -348,7 +352,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let new_shape = shape![4, 1].unwrap();
-        let reshaped_matrix = matrix.reshape(&new_shape).unwrap();
+        let reshaped_matrix = matrix.redimension(&new_shape).unwrap();
         assert_eq!(reshaped_matrix.shape(), &new_shape);
         assert_eq!(reshaped_matrix[coord![0, 0].unwrap()], 1.0);
         assert_eq!(reshaped_matrix[coord![1, 0].unwrap()], 2.0);
