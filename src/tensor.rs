@@ -3,13 +3,13 @@ use std::ops::{Add, Div, Mul, Sub};
 
 use crate::axes::Axes;
 use crate::coordinate::Coordinate;
+use crate::dynamic_matrix::DynamicMatrix;
+use crate::dynamic_vector::DynamicVector;
 use crate::error::ShapeError;
 use crate::iter::IndexIterator;
-use crate::dynamic_matrix::DynamicMatrix;
 use crate::shape;
 use crate::shape::Shape;
 use crate::storage::DynamicStorage;
-use crate::dynamic_vector::DynamicVector;
 
 #[derive(Debug)]
 pub struct DynamicTensor<T: Num> {

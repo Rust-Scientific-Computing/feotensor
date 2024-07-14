@@ -3,11 +3,11 @@ use std::ops::{Add, Deref, DerefMut, Div, Index, IndexMut, Mul, Sub};
 use crate::axes::Axes;
 use crate::coord;
 use crate::coordinate::Coordinate;
+use crate::dynamic_vector::DynamicVector;
 use crate::error::ShapeError;
 use crate::shape;
 use crate::shape::Shape;
 use crate::tensor::DynamicTensor;
-use crate::dynamic_vector::DynamicVector;
 use num::{Float, Num};
 
 pub struct DynamicMatrix<T: Num> {

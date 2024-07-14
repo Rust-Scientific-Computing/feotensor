@@ -1,9 +1,9 @@
 pub mod axes;
 pub mod coordinate;
+pub mod dynamic_matrix;
+pub mod dynamic_vector;
 pub mod error;
 pub mod iter;
-pub mod dynamic_matrix;
 pub mod shape;
 pub mod storage;
 pub mod tensor;
-pub mod dynamic_vector;
