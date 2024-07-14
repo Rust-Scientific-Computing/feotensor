@@ -1,8 +1,8 @@
 use std::ops::{Add, Deref, DerefMut, Div, Index, IndexMut, Mul, Sub};
 
 use crate::coord;
+use crate::dynamic_matrix::DynamicMatrix;
 use crate::error::ShapeError;
-use crate::matrix::DynamicMatrix;
 use crate::shape;
 use crate::shape::Shape;
 use crate::tensor::DynamicTensor;
