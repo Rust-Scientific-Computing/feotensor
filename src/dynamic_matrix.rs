@@ -7,7 +7,7 @@ use crate::error::ShapeError;
 use crate::shape;
 use crate::shape::Shape;
 use crate::tensor::DynamicTensor;
-use crate::vector::DynamicVector;
+use crate::dynamic_vector::DynamicVector;
 use num::{Float, Num};
 
 pub struct DynamicMatrix<T: Num> {
