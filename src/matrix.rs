@@ -47,6 +47,24 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
         Self::fill(shape, T::one())
     }
 
+    pub fn redimension(&self, shape: &Shape) -> Result<DynamicMatrix<T>, ShapeError> {
+        if shape.order() != 2 {
+            return Err(ShapeError::new("Shape must have order of 2"));
+        }
+        let result = self.tensor.reshape(shape)?;
+        Ok(DynamicMatrix { tensor: result })
+    }
+
+    pub fn reshape(&self, shape: &Shape) -> Result<DynamicTensor<T>, ShapeError> {
+        self.tensor.reshape(shape)
+    }
+
+    pub fn flatten(&self) -> DynamicVector<T> {
+        let flattened_shape = Shape::new(vec![self.tensor.size()]).unwrap();
+        let result = self.tensor.reshape(&flattened_shape).unwrap();
+        DynamicVector::from_tensor(result).unwrap()
+    }
+
     pub fn sum(&self, axes: Axes) -> DynamicVector<T> {
         let result = self.tensor.sum(axes);
         DynamicVector::from_tensor(result).unwrap()
@@ -326,6 +344,43 @@ mod tests {
         assert_eq!(matrix[coord![0, 1].unwrap()], 1.0);
         assert_eq!(matrix[coord![1, 0].unwrap()], 1.0);
         assert_eq!(matrix[coord![1, 1].unwrap()], 1.0);
+    }
+
+    #[test]
+    fn test_reshape() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let matrix = DynamicMatrix::new(&shape, &data).unwrap();
+        let new_shape = shape![4, 1].unwrap();
+        let reshaped_matrix = matrix.redimension(&new_shape).unwrap();
+        assert_eq!(reshaped_matrix.shape(), &new_shape);
+        assert_eq!(reshaped_matrix[coord![0, 0].unwrap()], 1.0);
+        assert_eq!(reshaped_matrix[coord![1, 0].unwrap()], 2.0);
+        assert_eq!(reshaped_matrix[coord![2, 0].unwrap()], 3.0);
+        assert_eq!(reshaped_matrix[coord![3, 0].unwrap()], 4.0);
+    }
+
+    #[test]
+    fn test_reshape_fail() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let matrix = DynamicMatrix::new(&shape, &data).unwrap();
+        let new_shape = shape![3, 2].unwrap();
+        let result = matrix.reshape(&new_shape);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flatten() {
+        let shape = shape![2, 2].unwrap();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let matrix = DynamicMatrix::new(&shape, &data).unwrap();
+        let flattened_vector = matrix.flatten();
+        assert_eq!(flattened_vector.shape(), &shape![4].unwrap());
+        assert_eq!(flattened_vector[0], 1.0);
+        assert_eq!(flattened_vector[1], 2.0);
+        assert_eq!(flattened_vector[2], 3.0);
+        assert_eq!(flattened_vector[3], 4.0);
     }
 
     #[test]

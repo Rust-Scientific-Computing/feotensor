@@ -42,6 +42,10 @@ impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
         Self::fill(shape, T::one())
     }
 
+    pub fn reshape(&self, shape: &Shape) -> Result<DynamicTensor<T>, ShapeError> {
+        self.tensor.reshape(shape)
+    }
+
     pub fn sum(&self) -> DynamicVector<T> {
         let result = self.tensor.sum(vec![]);
         DynamicVector::from_tensor(result).unwrap()
