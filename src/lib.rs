@@ -6,4 +6,5 @@ pub mod matrix;
 pub mod shape;
 pub mod storage;
 pub mod tensor;
+pub mod traits;
 pub mod vector;

@@ -6,6 +6,7 @@ use crate::matrix::DynamicMatrix;
 use crate::shape;
 use crate::shape::Shape;
 use crate::tensor::DynamicTensor;
+use crate::traits::MatMul;
 use num::Float;
 use num::Num;
 
@@ -66,9 +67,18 @@ impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
         let result = self.tensor.min(vec![]);
         DynamicVector::from_tensor(result).unwrap()
     }
+}
 
-    // Vector/Matrix Multiplication
-    pub fn vecmul(&self, rhs: &DynamicVector<T>) -> DynamicVector<T> {
+impl<T: Float + PartialOrd + Copy> DynamicVector<T> {
+    pub fn pow(&self, power: T) -> DynamicVector<T> {
+        DynamicVector::from_tensor(self.tensor.pow(power)).unwrap()
+    }
+}
+
+impl<T: Num + PartialOrd + Copy> MatMul<DynamicVector<T>> for DynamicVector<T> {
+    type Output = DynamicVector<T>;
+
+    fn matmul(self, rhs: &DynamicVector<T>) -> DynamicVector<T> {
         assert!(self.shape() == rhs.shape());
         let mut result = T::zero();
         for i in 0..self.size() {
@@ -76,8 +86,12 @@ impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
         }
         DynamicVector::new(&[result]).unwrap()
     }
+}
 
-    pub fn matmul(&self, rhs: &DynamicMatrix<T>) -> DynamicVector<T> {
+impl<T: Num + PartialOrd + Copy> MatMul<DynamicMatrix<T>> for DynamicVector<T> {
+    type Output = DynamicVector<T>;
+
+    fn matmul(self, rhs: &DynamicMatrix<T>) -> DynamicVector<T> {
         assert_eq!(self.shape()[0], rhs.shape()[0]);
         let mut result = DynamicTensor::zeros(&shape![rhs.shape()[1]].unwrap());
         for j in 0..rhs.shape()[1] {
@@ -88,12 +102,6 @@ impl<T: Num + PartialOrd + Copy> DynamicVector<T> {
             result.set(&coord![j].unwrap(), sum).unwrap();
         }
         DynamicVector::from_tensor(result).unwrap()
-    }
-}
-
-impl<T: Float + PartialOrd + Copy> DynamicVector<T> {
-    pub fn pow(&self, power: T) -> DynamicVector<T> {
-        DynamicVector::from_tensor(self.tensor.pow(power)).unwrap()
     }
 }
 
@@ -376,18 +384,18 @@ mod tests {
     }
 
     #[test]
-    fn test_vecmul() {
+    fn test_matmul_vec() {
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
         let vector1 = DynamicVector::new(&data1).unwrap();
         let vector2 = DynamicVector::new(&data2).unwrap();
-        let result = vector1.vecmul(&vector2);
+        let result = vector1.matmul(&vector2);
         assert_eq!(result[0], 40.0);
         assert_eq!(result.shape(), &shape![1].unwrap());
     }
 
     #[test]
-    fn test_matmul() {
+    fn test_matmul_mat() {
         let data_vector = vec![1.0, 2.0];
         let data_matrix = vec![1.0, 2.0, 3.0, 4.0];
         let vector = DynamicVector::new(&data_vector).unwrap();
