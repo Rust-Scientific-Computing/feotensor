@@ -1,5 +1,6 @@
 use std::ops::{Add, Deref, DerefMut, Div, Index, IndexMut, Mul, Sub};
 
+use crate::traits::MatMul;
 use crate::axes::Axes;
 use crate::coord;
 use crate::coordinate::Coordinate;
@@ -71,25 +72,18 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
         let result = self.tensor.min(axes);
         DynamicVector::from_tensor(result).unwrap()
     }
+}
 
-    // Vector/Matrix Multiplication
-    pub fn matmul(&self, rhs: &Self) -> DynamicMatrix<T> {
-        // Matrix-Matrix multiplication
-        assert_eq!(self.shape()[1], rhs.shape()[0]);
-        let mut result = DynamicTensor::zeros(&shape![self.shape()[0], rhs.shape()[1]].unwrap());
-        for i in 0..self.shape()[0] {
-            for j in 0..rhs.shape()[1] {
-                let mut sum = T::zero();
-                for k in 0..self.shape()[1] {
-                    sum = sum + self[coord![i, k].unwrap()] * rhs[coord![k, j].unwrap()];
-                }
-                result.set(&coord![i, j].unwrap(), sum).unwrap();
-            }
-        }
-        DynamicMatrix::from_tensor(result).unwrap()
+impl<T: Float + PartialOrd + Copy> DynamicMatrix<T> {
+    pub fn pow(&self, power: T) -> DynamicMatrix<T> {
+        DynamicMatrix::from_tensor(self.tensor.pow(power)).unwrap()
     }
+}
 
-    pub fn vecmul(&self, rhs: &DynamicVector<T>) -> DynamicVector<T> {
+impl<T: Num + PartialOrd + Copy> MatMul<DynamicVector<T>> for DynamicMatrix<T> {
+    type Output = DynamicVector<T>;
+
+    fn matmul(self, rhs: &DynamicVector<T>) -> DynamicVector<T> {
         assert_eq!(self.shape()[1], rhs.shape()[0]);
         let mut result = DynamicTensor::zeros(&shape![self.shape()[0]].unwrap());
         for i in 0..self.shape()[0] {
@@ -103,12 +97,24 @@ impl<T: Num + PartialOrd + Copy> DynamicMatrix<T> {
     }
 }
 
-impl<T: Float + PartialOrd + Copy> DynamicMatrix<T> {
-    pub fn pow(&self, power: T) -> DynamicMatrix<T> {
-        DynamicMatrix::from_tensor(self.tensor.pow(power)).unwrap()
+impl<T: Num + PartialOrd + Copy> MatMul<DynamicMatrix<T>> for DynamicMatrix<T> {
+    type Output = DynamicMatrix<T>;
+
+    fn matmul(self, rhs: &DynamicMatrix<T>) -> DynamicMatrix<T> {
+        assert_eq!(self.shape()[1], rhs.shape()[0]);
+        let mut result = DynamicTensor::zeros(&shape![self.shape()[0], rhs.shape()[1]].unwrap());
+        for i in 0..self.shape()[0] {
+            for j in 0..rhs.shape()[1] {
+                let mut sum = T::zero();
+                for k in 0..self.shape()[1] {
+                    sum = sum + self[coord![i, k].unwrap()] * rhs[coord![k, j].unwrap()];
+                }
+                result.set(&coord![i, j].unwrap(), sum).unwrap();
+            }
+        }
+        DynamicMatrix::from_tensor(result).unwrap()
     }
 }
-
 // Scalar Addition
 impl<T: Num + PartialOrd + Copy> Add<T> for DynamicMatrix<T> {
     type Output = DynamicMatrix<T>;
@@ -420,7 +426,7 @@ mod tests {
     }
 
     #[test]
-    fn test_matmul() {
+    fn test_matmul_mat() {
         let shape = shape![2, 2].unwrap();
         let data1 = vec![1.0, 2.0, 3.0, 4.0];
         let data2 = vec![2.0, 3.0, 4.0, 5.0];
@@ -435,13 +441,13 @@ mod tests {
     }
 
     #[test]
-    fn test_vecmul() {
+    fn test_matmul_vec() {
         let shape = shape![2, 2].unwrap();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let matrix = DynamicMatrix::new(&shape, &data).unwrap();
         let vector_data = vec![1.0, 2.0];
         let vector = DynamicVector::new(&vector_data).unwrap();
-        let result = matrix.vecmul(&vector);
+        let result = matrix.matmul(&vector);
         assert_eq!(result.shape(), &shape![2].unwrap());
         assert_eq!(result[0], 5.0);
         assert_eq!(result[1], 11.0);
