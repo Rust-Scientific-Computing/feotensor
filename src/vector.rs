@@ -1,12 +1,12 @@
 use std::ops::{Add, Deref, DerefMut, Div, Index, IndexMut, Mul, Sub};
 
-use crate::traits::MatMul;
 use crate::coord;
 use crate::error::ShapeError;
 use crate::matrix::DynamicMatrix;
 use crate::shape;
 use crate::shape::Shape;
 use crate::tensor::DynamicTensor;
+use crate::traits::MatMul;
 use num::Float;
 use num::Num;
 

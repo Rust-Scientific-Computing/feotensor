@@ -1,5 +1,5 @@
-pub trait MatMul<Rhs=Self> {
-  type Output;
+pub trait MatMul<Rhs = Self> {
+    type Output;
 
-  fn matmul(self, rhs: &Rhs) -> Self::Output;
+    fn matmul(self, rhs: &Rhs) -> Self::Output;
 }
